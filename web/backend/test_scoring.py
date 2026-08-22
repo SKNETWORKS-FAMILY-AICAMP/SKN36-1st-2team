@@ -235,3 +235,15 @@ class LogisticsScoreIntegrationTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+# from web.backend import MySQLDB, get_logistics_score
+
+# db = MySQLDB.from_env()
+
+# result = get_logistics_score(
+#     db,
+#     "R0167",
+#     "2026-07",
+# )
+
+# print(result)
