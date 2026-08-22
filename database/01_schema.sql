@@ -14,7 +14,7 @@ USE logistics_db;
 -- =============================================
 
 CREATE TABLE region (
-    region_id INT NOT NULL AUTO_INCREMENT COMMENT '지역아이디',
+    region_id CHAR(5) NOT NULL COMMENT '분석지역ID',
     region_name VARCHAR(30) NOT NULL COMMENT '지역이름',
 
     PRIMARY KEY (region_id)
@@ -67,7 +67,7 @@ CREATE TABLE member (
 -- =============================================
 
 CREATE TABLE people (
-    region_id INT NOT NULL COMMENT '지역아이디',
+    region_id CHAR(5) NOT NULL COMMENT '분석지역ID',
     date_ym DATE NOT NULL COMMENT '날짜연월',
     people_population INT NOT NULL COMMENT '인구수',
 
@@ -89,7 +89,7 @@ CREATE TABLE people (
 
 CREATE TABLE vehicle (
     category_id INT NOT NULL COMMENT '카테고리아이디',
-    region_id INT NOT NULL COMMENT '지역아이디',
+    region_id CHAR(5) NOT NULL COMMENT '분석지역ID',
     date_ym DATE NOT NULL COMMENT '날짜연월',
     vehicle_count INT NOT NULL COMMENT '차량등록대수',
 
