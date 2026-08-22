@@ -4,6 +4,8 @@ from .db import MySQLDB
 from .queries import (
     get_categories,
     get_national_freight_count,
+    get_national_population,
+    get_national_vehicle_metrics,
     get_population,
     get_population_history,
     get_region,
@@ -13,13 +15,16 @@ from .queries import (
     get_vehicle_data,
     get_vehicle_history,
 )
-from .services import get_dashboard_summary, get_region_detail, get_region_trend
+from .services import get_dashboard_summary, get_logistics_score, get_region_detail, get_region_trend
 
 __all__ = [
     "MySQLDB",
     "get_categories",
     "get_dashboard_summary",
+    "get_logistics_score",
     "get_national_freight_count",
+    "get_national_population",
+    "get_national_vehicle_metrics",
     "get_population",
     "get_population_history",
     "get_region",

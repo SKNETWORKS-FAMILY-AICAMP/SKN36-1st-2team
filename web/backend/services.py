@@ -6,7 +6,9 @@ from typing import Any
 
 from .db import MySQLDB
 from .queries import (
+    get_national_population,
     get_national_freight_count,
+    get_national_vehicle_metrics,
     get_population,
     get_population_history,
     get_region,
@@ -15,6 +17,7 @@ from .queries import (
     get_vehicle_data,
     get_vehicle_history,
 )
+from .scoring import calculate_logistics_score, shift_year_month, validate_weight
 
 
 def get_dashboard_summary(db: MySQLDB, year_month: str) -> dict[str, Any]:
@@ -100,3 +103,45 @@ def get_region_trend(
             for row in population_rows
         ],
     }
+
+
+def get_logistics_score(
+    db: MySQLDB,
+    region_code: str,
+    date: str,
+    industry_weight: int | float = 3,
+    growth_weight: int | float = 3,
+    demand_weight: int | float = 3,
+) -> dict[str, Any] | None:
+    """선택 지역·월의 전국 백분위 기반 물류 거점 점수를 반환한다."""
+    # DB를 조회하기 전에 날짜와 중요도를 검증해 잘못된 입력을 빠르게 알려준다.
+    target_date = shift_year_month(date, 0)
+    validate_weight(industry_weight, "industry_weight")
+    validate_weight(growth_weight, "growth_weight")
+    validate_weight(demand_weight, "demand_weight")
+
+    # 존재하지 않는 정상 형식의 지역코드는 기존 단건 조회 규칙과 같이 None을 반환한다.
+    region = get_region(db, region_code)
+    if region is None:
+        return None
+
+    # 성장성에는 기준월과 3·6·12개월 전 화물차 수가 필요하다.
+    required_months = [
+        target_date,
+        shift_year_month(target_date, -3),
+        shift_year_month(target_date, -6),
+        shift_year_month(target_date, -12),
+    ]
+    vehicle_rows = get_national_vehicle_metrics(db, required_months)
+    population_rows = get_national_population(db, target_date)
+
+    # scoring.py는 DB를 모르고 전달받은 원본 값만으로 백분위와 점수를 계산한다.
+    return calculate_logistics_score(
+        region=region,
+        target_date=target_date,
+        vehicle_rows=vehicle_rows,
+        population_rows=population_rows,
+        industry_weight=industry_weight,
+        growth_weight=growth_weight,
+        demand_weight=demand_weight,
+    )

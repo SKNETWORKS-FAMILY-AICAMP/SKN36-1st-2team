@@ -256,3 +256,57 @@ def get_population_history(
     for row in rows:
         row["population"] = int(row["population"])
     return rows
+
+# 점수 계산에 필요한 여러 월의 지역별 화물차 수와 전체 차량 수를 반환
+def get_national_vehicle_metrics(
+    db: MySQLDB,
+    year_months: list[str],
+) -> list[dict[str, Any]]:
+    
+    if not year_months:
+        return []
+
+    # 점수 계산은 기준월, 3·6·12개월 전 자료를 한 번에 사용한다.
+    # 중복 월은 제거하고, 외부 YYYY-MM 문자열은 DB DATE와 비교할 수 있게 변환한다.
+    months = sorted({_parse_year_month(value, "year_months") for value in year_months})
+    placeholders = ", ".join(["%s"] * len(months))
+
+    # vehicle과 category를 JOIN해야 화물 대분류만 조건부로 합산할 수 있다.
+    # SUM(CASE ...)는 화물 3개 세부 카테고리만, 일반 SUM은 12개 전체를 합산한다.
+    rows = db.fetch_all(
+        f"""SELECT v.region_id AS region_code,
+                   DATE_FORMAT(v.date_ym, '%%Y-%%m') AS date,
+                   SUM(CASE WHEN c.category_main = %s THEN v.vehicle_count ELSE 0 END) AS truck_count,
+                   SUM(v.vehicle_count) AS total_vehicle_count
+        FROM vehicle v
+        JOIN category c ON c.category_id = v.category_id
+        WHERE v.date_ym IN ({placeholders})
+        GROUP BY v.region_id, v.date_ym
+        ORDER BY v.region_id, v.date_ym""",
+        tuple(["화물", *months]),
+    )
+    for row in rows:
+        row["truck_count"] = int(row["truck_count"])
+        row["total_vehicle_count"] = int(row["total_vehicle_count"])
+    return rows
+
+
+def get_national_population(
+    db: MySQLDB,
+    year_month: str,
+) -> list[dict[str, Any]]:
+    """특정 월에 데이터가 있는 전국 지역별 인구를 반환한다."""
+    month = _parse_year_month(year_month)
+    # 백분위 모집단은 같은 기준월의 모든 지역이며, 인구가 없는 지역은 결과에 포함되지 않는다.
+    rows = db.fetch_all(
+        """SELECT region_id AS region_code,
+                  DATE_FORMAT(date_ym, '%%Y-%%m') AS date,
+                  people_population AS population
+        FROM people
+        WHERE date_ym = %s
+        ORDER BY region_id""",
+        (month,),
+    )
+    for row in rows:
+        row["population"] = int(row["population"])
+    return rows
