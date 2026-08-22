@@ -51,14 +51,16 @@ CREATE TABLE category (
 
 
 -- =============================================
--- 5. 회원 테이블
+-- 5. 관리자 테이블
 -- =============================================
 
-CREATE TABLE member (
-    user_id INT NOT NULL AUTO_INCREMENT COMMENT '회원아이디',
-    user_pwd VARCHAR(20) NOT NULL COMMENT '회원비밀번호',
+CREATE TABLE admin (
+    admin_id INT NOT NULL AUTO_INCREMENT COMMENT '관리자아이디',
+    admin_login_id VARCHAR(50) NOT NULL COMMENT '관리자로그인아이디',
+    admin_pwd VARCHAR(255) NOT NULL COMMENT '관리자비밀번호',
 
-    PRIMARY KEY (user_id)
+    PRIMARY KEY (admin_id),
+    UNIQUE KEY uq_admin_login_id (admin_login_id)
 );
 
 
@@ -118,16 +120,16 @@ CREATE TABLE vehicle (
 -- =============================================
 
 CREATE TABLE inquiry (
-    inquire_id INT NOT NULL AUTO_INCREMENT COMMENT '문의아이디',
-    user_id INT NOT NULL COMMENT '회원아이디',
-    inquire_content VARCHAR(1000) NOT NULL COMMENT '문의내용',
-    inquire_pwd VARCHAR(200) NOT NULL COMMENT '문의비밀번호',
-    inquire_writer INT NOT NULL DEFAULT 1 COMMENT '작성자컬럼',
-    inquire_admin INT NOT NULL DEFAULT 1 COMMENT '관리자컬럼',
+    inquiry_id INT NOT NULL AUTO_INCREMENT COMMENT '문의아이디',
+    company_name VARCHAR(100) NOT NULL COMMENT '회사명',
+    manager_name VARCHAR(50) NOT NULL COMMENT '담당자명',
+    email VARCHAR(255) NOT NULL COMMENT '이메일',
+    contact VARCHAR(30) NULL COMMENT '연락처',
+    inquiry_type VARCHAR(50) NOT NULL COMMENT '문의유형',
+    inquiry_content VARCHAR(1000) NOT NULL COMMENT '문의내용',
+    privacy_agreed BOOLEAN NOT NULL COMMENT '개인정보수집동의',
+    status VARCHAR(20) NOT NULL DEFAULT '접수' COMMENT '처리상태',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
 
-    PRIMARY KEY (inquire_id),
-
-    CONSTRAINT fk_inquiry_member
-        FOREIGN KEY (user_id)
-        REFERENCES member(user_id)
+    PRIMARY KEY (inquiry_id)
 );
