@@ -18,6 +18,7 @@ from .queries import (
     get_population_history,
     get_region,
     get_region_count,
+    get_regions,
     get_vehicle_category_counts,
     get_vehicle_data,
     get_vehicle_history,
@@ -27,8 +28,8 @@ from .queries import (
 from .scoring import (
     calculate_growth,
     calculate_logistics_score,
+    normalize_weights,
     shift_year_month,
-    validate_weight,
 )
 
 
@@ -207,9 +208,7 @@ def get_logistics_score(
     """선택 지역·월의 전국 백분위 기반 물류 거점 점수를 반환한다."""
     # DB를 조회하기 전에 날짜와 중요도를 검증해 잘못된 입력을 빠르게 알려준다.
     target_date = shift_year_month(date, 0)
-    validate_weight(industry_weight, "industry_weight")
-    validate_weight(growth_weight, "growth_weight")
-    validate_weight(demand_weight, "demand_weight")
+    normalize_weights(industry_weight, growth_weight, demand_weight)
 
     # 존재하지 않는 정상 형식의 지역코드는 기존 단건 조회 규칙과 같이 None을 반환한다.
     region = get_region(db, region_code)
@@ -236,6 +235,67 @@ def get_logistics_score(
         growth_weight=growth_weight,
         demand_weight=demand_weight,
     )
+
+
+def get_logistics_ranking(
+    db: MySQLDB,
+    date: str,
+    industry_weight: int | float = 3,
+    growth_weight: int | float = 3,
+    demand_weight: int | float = 3,
+    limit: int = 10,
+) -> list[dict[str, Any]]:
+    """전국 지역의 물류 거점 점수를 계산해 종합점수 순으로 반환한다."""
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+        raise ValueError("limit은 1 이상의 정수여야 합니다.")
+
+    target_date = shift_year_month(date, 0)
+    normalize_weights(industry_weight, growth_weight, demand_weight)
+    required_months = [
+        target_date,
+        shift_year_month(target_date, -3),
+        shift_year_month(target_date, -6),
+        shift_year_month(target_date, -12),
+    ]
+
+    # 전국 공통 원본은 한 번씩만 조회하고 모든 지역 계산에 같은 목록을 재사용한다.
+    regions = get_regions(db)
+    vehicle_rows = get_national_vehicle_metrics(db, required_months)
+    population_rows = get_national_population(db, target_date)
+
+    scored_regions: list[dict[str, Any]] = []
+    for region in regions:
+        result = calculate_logistics_score(
+            region=region,
+            target_date=target_date,
+            vehicle_rows=vehicle_rows,
+            population_rows=population_rows,
+            industry_weight=industry_weight,
+            growth_weight=growth_weight,
+            demand_weight=demand_weight,
+        )
+        if not result["score_available"]:
+            continue
+        scored_regions.append(
+            {
+                "region_code": region["region_code"],
+                "region_name": region["region_name"],
+                "date": result["date"],
+                "scores": result["scores"],
+                "raw": result["raw"],
+                "normalized": result["normalized"],
+                "weights": result["weights"],
+                "normalized_weights": result["normalized_weights"],
+            }
+        )
+
+    scored_regions.sort(
+        key=lambda row: (-row["scores"]["total"], row["region_code"])
+    )
+    ranking = scored_regions[:limit]
+    for rank, row in enumerate(ranking, start=1):
+        row["rank"] = rank
+    return ranking
 
 
 def create_inquiry(

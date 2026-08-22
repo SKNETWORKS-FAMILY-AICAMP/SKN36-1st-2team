@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Any
+import math
 import re
 
 def shift_year_month(year_month: str, months: int) -> str:
@@ -37,6 +38,41 @@ def validate_weight(value: int | float, name: str) -> float:
     if not 1 <= numeric <= 5:
         raise ValueError(f"{name}는 1~5 범위여야 합니다.")
     return numeric
+
+
+def normalize_weights(
+    industry_weight: int | float,
+    growth_weight: int | float,
+    demand_weight: int | float,
+) -> tuple[dict[str, float], dict[str, float]]:
+    """1~5 중요도 또는 합계 100인 비율을 검증하고 정규화한다."""
+    raw_weights = {
+        "industry": industry_weight,
+        "growth": growth_weight,
+        "demand": demand_weight,
+    }
+    if any(
+        isinstance(value, bool) or not isinstance(value, (int, float))
+        for value in raw_weights.values()
+    ):
+        raise ValueError("가중치는 숫자여야 합니다.")
+
+    numeric_weights = {key: float(value) for key, value in raw_weights.items()}
+    importance_scale = all(1 <= value <= 5 for value in numeric_weights.values())
+    percentage_scale = (
+        all(value >= 0 for value in numeric_weights.values())
+        and math.isclose(sum(numeric_weights.values()), 100.0, abs_tol=0.01)
+    )
+    if not importance_scale and not percentage_scale:
+        raise ValueError(
+            "가중치는 각각 1~5이거나 0 이상이며 세 값의 합이 100이어야 합니다."
+        )
+
+    weight_sum = sum(numeric_weights.values())
+    normalized_weights = {
+        key: value / weight_sum for key, value in numeric_weights.items()
+    }
+    return numeric_weights, normalized_weights
 
 # (current - previous) / previous × 100
 def calculate_growth(current: int | None, previous: int | None) -> float | None:
@@ -83,13 +119,11 @@ def calculate_logistics_score(
     demand_weight: int | float = 3,
 ) -> dict[str, Any]:
     """전국 원본 데이터를 백분위화하고 선택 지역의 물류 거점 점수를 계산한다."""
-    weights = {
-        "industry": validate_weight(industry_weight, "industry_weight"),
-        "growth": validate_weight(growth_weight, "growth_weight"),
-        "demand": validate_weight(demand_weight, "demand_weight"),
-    }
-    weight_sum = sum(weights.values())
-    normalized_weights = {key: value / weight_sum for key, value in weights.items()}
+    weights, normalized_weights = normalize_weights(
+        industry_weight,
+        growth_weight,
+        demand_weight,
+    )
 
     t_minus_3 = shift_year_month(target_date, -3)
     t_minus_6 = shift_year_month(target_date, -6)
