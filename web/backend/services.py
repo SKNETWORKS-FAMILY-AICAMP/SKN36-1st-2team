@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
+
+from pymysql import MySQLError
 
 from .db import MySQLDB
 from .queries import (
@@ -16,6 +19,7 @@ from .queries import (
     get_vehicle_category_counts,
     get_vehicle_data,
     get_vehicle_history,
+    insert_inquiry,
 )
 from .scoring import calculate_logistics_score, shift_year_month, validate_weight
 
@@ -145,3 +149,66 @@ def get_logistics_score(
         growth_weight=growth_weight,
         demand_weight=demand_weight,
     )
+
+
+def create_inquiry(
+    db: MySQLDB,
+    company_name: str,
+    manager_name: str,
+    email: str,
+    contact: str | None,
+    inquiry_type: str,
+    inquiry_content: str,
+    privacy_agreed: bool,
+) -> dict[str, bool | str]:
+    """Streamlit 문의 입력값을 검증하고 정상일 때만 MySQL에 저장한다."""
+    fields = [
+        ("company_name", company_name, "회사명", 100),
+        ("manager_name", manager_name, "담당자명", 50),
+        ("email", email, "이메일", 255),
+        ("inquiry_type", inquiry_type, "문의 유형", 50),
+        ("inquiry_content", inquiry_content, "문의 내용", 1000),
+    ]
+    cleaned: dict[str, str] = {}
+    for key, value, label, max_length in fields:
+        if not isinstance(value, str) or not value.strip():
+            return {"success": False, "message": f"{label}을(를) 입력해주세요."}
+        normalized = value.strip()
+        if len(normalized) > max_length:
+            return {
+                "success": False,
+                "message": f"{label}은(는) {max_length}자 이하로 입력해주세요.",
+            }
+        cleaned[key] = normalized
+
+    # 최소한 아이디@도메인.확장자 형태인지 확인한다.
+    if re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", cleaned["email"]) is None:
+        return {"success": False, "message": "올바른 이메일 형식을 입력해주세요."}
+
+    normalized_contact: str | None = None
+    if contact is not None:
+        if not isinstance(contact, str):
+            return {"success": False, "message": "연락처는 문자열로 입력해주세요."}
+        normalized_contact = contact.strip() or None
+        if normalized_contact is not None and len(normalized_contact) > 30:
+            return {"success": False, "message": "연락처는 30자 이하로 입력해주세요."}
+
+    # 개인정보 동의가 정확히 True가 아니면 INSERT 함수를 호출하지 않는다.
+    if privacy_agreed is not True:
+        return {"success": False, "message": "개인정보 수집에 동의해주세요."}
+
+    try:
+        insert_inquiry(
+            db=db,
+            company_name=cleaned["company_name"],
+            manager_name=cleaned["manager_name"],
+            email=cleaned["email"],
+            contact=normalized_contact,
+            inquiry_type=cleaned["inquiry_type"],
+            inquiry_content=cleaned["inquiry_content"],
+            privacy_agreed=True,
+        )
+    except MySQLError:
+        return {"success": False, "message": "문의 등록 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."}
+
+    return {"success": True, "message": "문의가 정상적으로 등록되었습니다."}

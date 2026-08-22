@@ -14,11 +14,13 @@ from .queries import (
     get_vehicle_category_counts,
     get_vehicle_data,
     get_vehicle_history,
+    insert_inquiry,
 )
-from .services import get_dashboard_summary, get_logistics_score, get_region_detail, get_region_trend
+from .services import create_inquiry, get_dashboard_summary, get_logistics_score, get_region_detail, get_region_trend
 
 __all__ = [
     "MySQLDB",
+    "create_inquiry",
     "get_categories",
     "get_dashboard_summary",
     "get_logistics_score",
@@ -35,4 +37,5 @@ __all__ = [
     "get_vehicle_category_counts",
     "get_vehicle_data",
     "get_vehicle_history",
+    "insert_inquiry",
 ]
