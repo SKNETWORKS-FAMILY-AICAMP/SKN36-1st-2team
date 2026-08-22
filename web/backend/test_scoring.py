@@ -113,6 +113,7 @@ class LogisticsScoreFormulaTest(unittest.TestCase):
         self.assertEqual(self.result["raw"]["truck_count"], 200)
         self.assertEqual(self.result["raw"]["total_vehicle_count"], 400)
         self.assertEqual(self.result["raw"]["truck_ratio"], 50.0)
+        self.assertEqual(self.result["raw"]["truck_per_10000"], 2000.0)
         self.assertEqual(self.result["raw"]["yoy_growth"], 100.0)
         self.assertAlmostEqual(self.result["raw"]["acceleration"], -16.6667, places=4)
 
@@ -164,9 +165,37 @@ class LogisticsScoreFormulaTest(unittest.TestCase):
             population_rows=rows,
         )
         self.assertFalse(result["score_available"])
+        self.assertIsNone(result["raw"]["truck_per_10000"])
         self.assertIsNone(result["scores"]["demand"])
         self.assertIsNone(result["scores"]["total"])
         self.assertIn("인구 데이터", result["unavailable_reason"])
+
+    def test_zero_population_makes_truck_per_10000_unavailable(self) -> None:
+        rows = make_population_rows()
+        rows[0]["population"] = 0
+        result = calculate_logistics_score(
+            region={"region_code": "A", "region_name": "가상 지역 A"},
+            target_date="2026-07",
+            vehicle_rows=make_vehicle_rows(),
+            population_rows=rows,
+        )
+
+        self.assertIsNone(result["raw"]["truck_per_10000"])
+
+    def test_missing_truck_count_makes_truck_per_10000_unavailable(self) -> None:
+        rows = [
+            row
+            for row in make_vehicle_rows()
+            if not (row["region_code"] == "A" and row["date"] == "2026-07")
+        ]
+        result = calculate_logistics_score(
+            region={"region_code": "A", "region_name": "가상 지역 A"},
+            target_date="2026-07",
+            vehicle_rows=rows,
+            population_rows=make_population_rows(),
+        )
+
+        self.assertIsNone(result["raw"]["truck_per_10000"])
 
     def test_missing_history_makes_growth_unavailable(self) -> None:
         rows = [

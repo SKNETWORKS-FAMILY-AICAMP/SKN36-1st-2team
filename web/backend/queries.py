@@ -61,6 +61,24 @@ def get_regions(db: MySQLDB) -> list[dict[str, Any]]:
     )
 
 
+def get_regions_by_province(
+    db: MySQLDB,
+    province_name: str,
+) -> list[dict[str, Any]]:
+    """실제 DB 시도명과 정확히 일치하는 지역 목록을 반환한다."""
+    province = province_name.strip() if isinstance(province_name, str) else ""
+    if not province:
+        raise ValueError("province_name은 비어 있지 않은 문자열이어야 합니다.")
+    # ETL이 '표준시도명 + 공백 + 시군구명'으로 저장하므로 첫 토큰을 정확히 비교한다.
+    return db.fetch_all(
+        """SELECT region_id AS region_code, region_name
+        FROM region
+        WHERE SUBSTRING_INDEX(region_name, ' ', 1) = %s
+        ORDER BY region_name, region_id""",
+        (province,),
+    )
+
+
 def get_region_count(db: MySQLDB) -> dict[str, Any]:
     """전체 분석 대상 지역 수를 {'region_count': int} 형태로 반환한다."""
     # COUNT(*)는 결과가 한 행이므로 fetch_one()을 사용한다.
@@ -135,6 +153,28 @@ def get_national_freight_count(
         (month, "화물"),
     )
     return _cast_int(row, "vehicle_count")
+
+
+def get_province_freight_counts(
+    db: MySQLDB,
+    year_month: str,
+) -> list[dict[str, Any]]:
+    """특정 월의 전국 화물차 등록대수를 DB 시도명 단위로 합산한다."""
+    month = _parse_year_month(year_month)
+    rows = db.fetch_all(
+        """SELECT SUBSTRING_INDEX(r.region_name, ' ', 1) AS province_name,
+                  SUM(v.vehicle_count) AS vehicle_count
+        FROM vehicle v
+        JOIN category c ON c.category_id = v.category_id
+        JOIN region r ON r.region_id = v.region_id
+        WHERE v.date_ym = %s AND c.category_main = %s
+        GROUP BY SUBSTRING_INDEX(r.region_name, ' ', 1)
+        ORDER BY province_name""",
+        (month, "화물"),
+    )
+    for row in rows:
+        row["vehicle_count"] = int(row["vehicle_count"])
+    return rows
 
 
 def get_national_freight_usage_counts(
