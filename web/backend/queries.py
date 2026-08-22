@@ -137,6 +137,87 @@ def get_national_freight_count(
     return _cast_int(row, "vehicle_count")
 
 
+def get_national_freight_usage_counts(
+    db: MySQLDB,
+    year_month: str,
+) -> list[dict[str, Any]]:
+    """특정 월의 전국 화물차 등록대수를 용도별로 합산해 반환한다."""
+    month = _parse_year_month(year_month)
+    rows = db.fetch_all(
+        """SELECT DATE_FORMAT(v.date_ym, '%%Y-%%m') AS date,
+                  c.category_sub AS category_usage,
+                  SUM(v.vehicle_count) AS vehicle_count
+        FROM vehicle v
+        JOIN category c ON c.category_id = v.category_id
+        WHERE v.date_ym = %s AND c.category_main = %s
+        GROUP BY v.date_ym, c.category_sub
+        ORDER BY c.category_sub""",
+        (month, "화물"),
+    )
+    for row in rows:
+        row["vehicle_count"] = int(row["vehicle_count"])
+    return rows
+
+
+def get_national_freight_history(
+    db: MySQLDB,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> list[dict[str, Any]]:
+    """전국 화물차 월별 합계를 선택 기간 또는 전체 기간으로 반환한다."""
+    start, end = _parse_period(start_date, end_date)
+    conditions = ["c.category_main = %s"]
+    params: list[object] = ["화물"]
+    if start is not None:
+        conditions.append("v.date_ym >= %s")
+        params.append(start)
+    if end is not None:
+        conditions.append("v.date_ym <= %s")
+        params.append(end)
+
+    rows = db.fetch_all(
+        f"""SELECT DATE_FORMAT(v.date_ym, '%%Y-%%m') AS date,
+                   SUM(v.vehicle_count) AS vehicle_count
+        FROM vehicle v
+        JOIN category c ON c.category_id = v.category_id
+        WHERE {' AND '.join(conditions)}
+        GROUP BY v.date_ym
+        ORDER BY v.date_ym""",
+        tuple(params),
+    )
+    for row in rows:
+        row["vehicle_count"] = int(row["vehicle_count"])
+    return rows
+
+
+def get_top_region_freight_counts(
+    db: MySQLDB,
+    year_month: str,
+    limit: int = 10,
+) -> list[dict[str, Any]]:
+    """특정 월의 화물차 등록대수가 많은 지역을 내림차순으로 반환한다."""
+    month = _parse_year_month(year_month)
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+        raise ValueError("limit은 1 이상의 정수여야 합니다.")
+
+    rows = db.fetch_all(
+        """SELECT r.region_id AS region_code,
+                  r.region_name,
+                  SUM(v.vehicle_count) AS vehicle_count
+        FROM vehicle v
+        JOIN category c ON c.category_id = v.category_id
+        JOIN region r ON r.region_id = v.region_id
+        WHERE v.date_ym = %s AND c.category_main = %s
+        GROUP BY r.region_id, r.region_name
+        ORDER BY vehicle_count DESC, r.region_id
+        LIMIT %s""",
+        (month, "화물", limit),
+    )
+    for row in rows:
+        row["vehicle_count"] = int(row["vehicle_count"])
+    return rows
+
+
 def get_vehicle_category_counts(
     db: MySQLDB,
     region_code: str,
