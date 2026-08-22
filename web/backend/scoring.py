@@ -156,6 +156,11 @@ def calculate_logistics_score(
     population = populations.get(code)
     yoy_growth = yoy_values.get(code)
     acceleration = acceleration_values.get(code)
+    truck_per_10000 = (
+        truck_count / population * 10_000.0
+        if truck_count is not None and population is not None and population != 0
+        else None
+    )
     selected_normalized = {key: scores.get(code) for key, scores in normalized.items()}
 
     industry_score = None
@@ -202,6 +207,7 @@ def calculate_logistics_score(
             "total_vehicle_count": total_vehicle_count,
             "truck_ratio": rounded(truck_ratios.get(code)),
             "population": population,
+            "truck_per_10000": rounded(truck_per_10000),
             "yoy_growth": rounded(yoy_growth),
             "acceleration": rounded(acceleration),
         },
