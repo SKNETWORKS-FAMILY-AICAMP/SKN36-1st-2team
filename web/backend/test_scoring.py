@@ -9,6 +9,7 @@ from .db import MySQLDB
 from .scoring import (
     calculate_growth,
     calculate_logistics_score,
+    normalize_weights,
     percentile_scores,
     shift_year_month,
     validate_weight,
@@ -97,6 +98,16 @@ class ScoringHelperTest(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 validate_weight(value, "weight")
 
+    def test_percentage_weights(self) -> None:
+        weights, normalized = normalize_weights(10, 55, 35)
+
+        self.assertEqual(weights, {"industry": 10.0, "growth": 55.0, "demand": 35.0})
+        self.assertEqual(normalized, {"industry": 0.1, "growth": 0.55, "demand": 0.35})
+
+    def test_invalid_mixed_weight_scale(self) -> None:
+        with self.assertRaises(ValueError):
+            normalize_weights(6, 3, 3)
+
 
 class LogisticsScoreFormulaTest(unittest.TestCase):
     """고정된 가상 데이터로 산업성·성장성·수요성·최종점수를 정확히 검증한다."""
@@ -155,6 +166,23 @@ class LogisticsScoreFormulaTest(unittest.TestCase):
         # 50*0.5 + 70*0.3 + 0*0.2 = 46
         self.assertEqual(result["normalized_weights"], {"industry": 0.5, "growth": 0.3, "demand": 0.2})
         self.assertEqual(result["scores"]["total"], 46.0)
+
+    def test_percentage_weight_total(self) -> None:
+        result = calculate_logistics_score(
+            region={"region_code": "A", "region_name": "가상 지역 A"},
+            target_date="2026-07",
+            vehicle_rows=make_vehicle_rows(),
+            population_rows=make_population_rows(),
+            industry_weight=10,
+            growth_weight=55,
+            demand_weight=35,
+        )
+
+        self.assertEqual(
+            result["normalized_weights"],
+            {"industry": 0.1, "growth": 0.55, "demand": 0.35},
+        )
+        self.assertEqual(result["scores"]["total"], 43.5)
 
     def test_missing_population_makes_total_unavailable(self) -> None:
         rows = [row for row in make_population_rows() if row["region_code"] != "A"]
@@ -252,6 +280,16 @@ class LogisticsScoreIntegrationTest(unittest.TestCase):
             + result["scores"]["growth"] * 0.3
             + result["scores"]["demand"] * 0.2
         )
+        self.assertAlmostEqual(result["scores"]["total"], expected, places=3)
+
+    def test_percentage_weight_service_result_matches_formula(self) -> None:
+        result = get_logistics_score(self.db, "R0001", "2026-07", 10, 55, 35)
+        expected = (
+            result["scores"]["industry"] * 0.1
+            + result["scores"]["growth"] * 0.55
+            + result["scores"]["demand"] * 0.35
+        )
+
         self.assertAlmostEqual(result["scores"]["total"], expected, places=3)
 
     def test_unknown_region(self) -> None:

@@ -24,6 +24,7 @@ from .queries import (
 from .services import (
     create_inquiry,
     get_dashboard_summary,
+    get_logistics_ranking,
     get_logistics_score,
     get_national_vehicle_trend,
     get_national_vehicle_usage,
@@ -37,6 +38,7 @@ __all__ = [
     "create_inquiry",
     "get_categories",
     "get_dashboard_summary",
+    "get_logistics_ranking",
     "get_logistics_score",
     "get_national_freight_count",
     "get_national_freight_history",
