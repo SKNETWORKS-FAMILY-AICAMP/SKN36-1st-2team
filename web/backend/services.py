@@ -9,8 +9,10 @@ from pymysql import MySQLError
 
 from .db import MySQLDB
 from .queries import (
+    get_national_freight_history,
     get_national_population,
     get_national_freight_count,
+    get_national_freight_usage_counts,
     get_national_vehicle_metrics,
     get_population,
     get_population_history,
@@ -19,6 +21,7 @@ from .queries import (
     get_vehicle_category_counts,
     get_vehicle_data,
     get_vehicle_history,
+    get_top_region_freight_counts,
     insert_inquiry,
 )
 from .scoring import (
@@ -62,6 +65,65 @@ def get_dashboard_summary(db: MySQLDB, year_month: str) -> dict[str, Any]:
             else None
         ),
     }
+
+
+def get_national_vehicle_usage(
+    db: MySQLDB,
+    year_month: str,
+) -> dict[str, Any]:
+    """특정 월의 전국 화물차 합계와 용도별 등록대수·비율을 반환한다."""
+    rows = get_national_freight_usage_counts(db, year_month)
+    total = sum(row["vehicle_count"] for row in rows)
+    usage_order = {"자가용": 0, "영업용": 1, "관용": 2}
+    ordered_rows = sorted(
+        rows,
+        key=lambda row: usage_order.get(row["category_usage"], 3),
+    )
+
+    return {
+        "date": year_month,
+        "total": total,
+        "usage": [
+            {
+                "usage": row["category_usage"],
+                "count": row["vehicle_count"],
+                "ratio": round(row["vehicle_count"] / total * 100.0, 1)
+                if total != 0
+                else None,
+            }
+            for row in ordered_rows
+        ],
+    }
+
+
+def get_national_vehicle_trend(
+    db: MySQLDB,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> list[dict[str, Any]]:
+    """선택 기간의 전국 화물차 월별 등록 추이를 반환한다."""
+    rows = get_national_freight_history(db, start_date, end_date)
+    return [
+        {"date": row["date"], "count": row["vehicle_count"]}
+        for row in rows
+    ]
+
+
+def get_top_regions_by_freight_count(
+    db: MySQLDB,
+    year_month: str,
+    limit: int = 10,
+) -> list[dict[str, Any]]:
+    """특정 월의 화물차 등록대수 상위 지역을 화면용 구조로 반환한다."""
+    rows = get_top_region_freight_counts(db, year_month, limit)
+    return [
+        {
+            "region_code": row["region_code"],
+            "region_name": row["region_name"],
+            "count": row["vehicle_count"],
+        }
+        for row in rows
+    ]
 
 
 def get_region_detail(

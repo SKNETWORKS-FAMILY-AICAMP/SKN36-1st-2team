@@ -4,6 +4,8 @@ from .db import MySQLDB
 from .queries import (
     get_categories,
     get_national_freight_count,
+    get_national_freight_history,
+    get_national_freight_usage_counts,
     get_national_population,
     get_national_vehicle_metrics,
     get_population,
@@ -11,12 +13,22 @@ from .queries import (
     get_region,
     get_region_count,
     get_regions,
+    get_top_region_freight_counts,
     get_vehicle_category_counts,
     get_vehicle_data,
     get_vehicle_history,
     insert_inquiry,
 )
-from .services import create_inquiry, get_dashboard_summary, get_logistics_score, get_region_detail, get_region_trend
+from .services import (
+    create_inquiry,
+    get_dashboard_summary,
+    get_logistics_score,
+    get_national_vehicle_trend,
+    get_national_vehicle_usage,
+    get_region_detail,
+    get_region_trend,
+    get_top_regions_by_freight_count,
+)
 
 __all__ = [
     "MySQLDB",
@@ -25,7 +37,11 @@ __all__ = [
     "get_dashboard_summary",
     "get_logistics_score",
     "get_national_freight_count",
+    "get_national_freight_history",
+    "get_national_freight_usage_counts",
     "get_national_population",
+    "get_national_vehicle_trend",
+    "get_national_vehicle_usage",
     "get_national_vehicle_metrics",
     "get_population",
     "get_population_history",
@@ -34,6 +50,8 @@ __all__ = [
     "get_region_detail",
     "get_region_trend",
     "get_regions",
+    "get_top_region_freight_counts",
+    "get_top_regions_by_freight_count",
     "get_vehicle_category_counts",
     "get_vehicle_data",
     "get_vehicle_history",
