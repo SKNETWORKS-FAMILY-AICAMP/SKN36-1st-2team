@@ -310,3 +310,36 @@ def get_national_population(
     for row in rows:
         row["population"] = int(row["population"])
     return rows
+
+
+def insert_inquiry(
+    db: MySQLDB,
+    company_name: str,
+    manager_name: str,
+    email: str,
+    contact: str | None,
+    inquiry_type: str,
+    inquiry_content: str,
+    privacy_agreed: bool,
+) -> int:
+    """검증된 문의를 저장하고 DB가 자동 생성한 inquiry_id를 반환한다."""
+    return db.execute(
+        """INSERT INTO inquiry (
+            company_name,
+            manager_name,
+            email,
+            contact,
+            inquiry_type,
+            inquiry_content,
+            privacy_agreed
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+        (
+            company_name,
+            manager_name,
+            email,
+            contact,
+            inquiry_type,
+            inquiry_content,
+            privacy_agreed,
+        ),
+    )

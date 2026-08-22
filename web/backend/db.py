@@ -77,6 +77,24 @@ class MySQLDB:
             rows = cursor.fetchall()
         return [dict(row) for row in rows]
 
+    def execute(
+        self,
+        sql: str,
+        params: tuple[object, ...] = (),
+    ) -> int:
+        """쓰기 SQL을 트랜잭션으로 실행하고 생성된 AUTO_INCREMENT ID를 반환한다."""
+        self._connection.ping(reconnect=True)
+        try:
+            self._connection.begin()
+            with self._connection.cursor() as cursor:
+                cursor.execute(sql, params)
+                inserted_id = int(cursor.lastrowid)
+            self._connection.commit()
+            return inserted_id
+        except Exception:
+            self._connection.rollback()
+            raise
+
     def close(self) -> None:
         """사용이 끝난 MySQL 연결을 닫는다."""
         self._connection.close()
