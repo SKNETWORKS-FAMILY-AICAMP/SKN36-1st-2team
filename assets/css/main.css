@@ -1,0 +1,319 @@
+/* ── 히어로 ── */
+.wl-hero {
+  position: relative;
+  padding: clamp(48px, 9vh, 110px) clamp(24px, 5vw, 72px);
+  display: flex; flex-direction: column; justify-content: center;
+  overflow: hidden;
+  background: #1D4257;
+  min-height: 100vh;
+}
+
+.wl-hero-inner {
+  position: relative; z-index: 2;
+  max-width: 1400px; margin: 0 auto; width: 100%;
+}
+
+/* ── 카피 ── */
+.wl-h1 {
+  font-size: clamp(34px, 4.6vw, 62px);
+  font-weight: 700; line-height: 1.28; letter-spacing: -.035em;
+  color: #fff !important; margin: 0 0 28px; word-break: keep-all;
+}
+
+.wl-sub {
+  font-size: clamp(15px, 1.15vw, 18px);
+  font-weight: 400; line-height: 1.75; letter-spacing: -.01em;
+  color: rgba(255,255,255,.80);
+  max-width: 640px; margin: 0 0 40px; word-break: keep-all;
+}
+
+/* ── 버튼 ── */
+.wl-cta-row {
+  display: flex; flex-wrap: wrap; gap: 14px;
+  margin-bottom: clamp(52px, 9vh, 96px);
+}
+
+.wl-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 15px 30px; border-radius: 4px;
+  font-size: 15px; font-weight: 700; letter-spacing: -.02em;
+  text-decoration: none !important;
+  transition: transform .16s ease, background .16s ease, border-color .16s ease;
+}
+
+.wl-btn-primary {
+  background: #3D7FB0; color: #fff !important;
+  border: 1px solid #4A8CBD;
+}
+.wl-btn-primary:hover { background: #4A8CBD; transform: translateY(-2px); }
+
+.wl-btn-ghost {
+  background: transparent; color: #fff !important;
+  border: 1px solid rgba(255,255,255,.55);
+}
+.wl-btn-ghost:hover {
+  border-color: #fff; background: rgba(255,255,255,.08);
+  transform: translateY(-2px);
+}
+
+/* ── 지표 카드 ── */
+.wl-stats {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px; max-width: 1220px;
+}
+
+.wl-stat {
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 6px; padding: 26px 28px 24px;
+}
+
+.wl-stat-l {
+  font-size: 13.5px; font-weight: 500;
+  color: rgba(255,255,255,.74); margin-bottom: 14px;
+}
+.wl-stat-n {
+  font-size: clamp(26px, 2.7vw, 38px); font-weight: 700;
+  color: #fff; letter-spacing: -.03em; line-height: 1.1;
+}
+.wl-stat-s {
+  font-size: 12.5px; color: rgba(255,255,255,.56); margin-top: 12px;
+}
+
+@media (max-width: 980px) {
+  .wl-stats { grid-template-columns: 1fr; gap: 14px; }
+  .wl-stat  { padding: 20px 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wl-btn:hover { transform: none; }
+}
+
+
+/* ══ 강점 섹션 ══════════════════════════════════ */
+.wl-why {
+  min-height: 100dvh;
+  padding: clamp(56px, 8vh, 96px) clamp(24px, 5vw, 72px);
+  display: flex; flex-direction: column; justify-content: center;
+  background: #F2F5F8;
+}
+
+.wl-why-inner {
+  max-width: 1400px; margin: 0 auto; width: 100%;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: clamp(40px, 6vw, 96px); align-items: center;
+}
+
+/* ── 왼쪽 ── */
+.wl-why-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; letter-spacing: .18em; color: #2C6FB5;
+  margin-bottom: 16px;
+}
+.wl-why-title {
+  font-size: clamp(26px, 3vw, 40px); font-weight: 700;
+  letter-spacing: -.035em; color: #14293D;
+  margin: 0 0 clamp(32px, 5vh, 52px); word-break: keep-all;
+}
+
+.wl-why-list { display: flex; flex-direction: column; gap: 4px; }
+
+.wl-why-item {
+  display: grid; grid-template-columns: 46px 1fr;
+  gap: 18px; padding: 22px 0;
+  border-top: 1px solid #DDE4EB;
+}
+.wl-why-item:last-child { border-bottom: 1px solid #DDE4EB; }
+
+.wl-why-no {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px; font-weight: 600; color: #2C6FB5;
+  padding-top: 3px;
+}
+.wl-why-h {
+  font-size: clamp(17px, 1.5vw, 21px); font-weight: 700;
+  color: #14293D; letter-spacing: -.025em;
+  margin-bottom: 8px; word-break: keep-all;
+}
+.wl-why-d {
+  font-size: 14.5px; line-height: 1.75; color: #5A6B7C;
+  word-break: keep-all;
+}
+.wl-why-d b { font-weight: 600; color: #2C6FB5; }
+
+/* ── 오른쪽 시각 ── */
+.wl-why-visual {
+  position: relative;
+  background: #1D4257;
+  border-radius: 10px;
+  padding: 28px;
+  aspect-ratio: 4 / 3.4;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.wl-why-visual svg { width: 100%; height: 100%; }
+
+.wl-why-cap {
+  position: absolute; left: 28px; bottom: 24px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11.5px; letter-spacing: .12em;
+  color: rgba(255,255,255,.55);
+}
+
+@media (max-width: 1000px) {
+  .wl-why-inner { grid-template-columns: 1fr; gap: 36px; }
+  .wl-why-visual { aspect-ratio: 4 / 3; order: -1; }
+  .wl-why { min-height: auto; }
+}
+
+/* 앱 컨테이너 바닥 여백 제거 */
+[data-testid="stMain"],
+[data-testid="stMainBlockContainer"],
+.stMainBlockContainer,
+.block-container {
+  padding-bottom: 0 !important;
+}
+[data-testid="stAppViewContainer"] > .main { padding-bottom: 0 !important; }
+[data-testid="stBottomBlockContainer"] { display: none !important; }
+
+/* ══ 사용 흐름 ══════════════════════════════════ */
+.wl-flow {
+  min-height: 100dvh;
+  padding: clamp(56px, 8vh, 96px) clamp(24px, 5vw, 72px);
+  display: flex; flex-direction: column; justify-content: center;
+  background: #1D4257;
+}
+
+.wl-flow-inner { max-width: 1400px; margin: 0 auto; width: 100%; }
+
+.wl-flow-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; letter-spacing: .18em; color: #7FB2F0;
+  margin-bottom: 16px;
+}
+.wl-flow-title {
+  font-size: clamp(26px, 3vw, 40px); font-weight: 700;
+  letter-spacing: -.035em; color: #fff;
+  color : #fff !important;
+  margin: 0 0 clamp(40px, 6vh, 64px); word-break: keep-all;
+}
+
+/* 4단계 */
+.wl-steps {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0; position: relative;
+}
+
+.wl-step {
+  position: relative;
+  padding: 0 clamp(16px, 2vw, 30px);
+  border-left: 1px solid rgba(255,255,255,.16);
+}
+.wl-step:first-child { padding-left: 0; border-left: none; }
+
+
+.wl-step-no {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; letter-spacing: .16em;
+  color: #7FB2F0; margin-bottom: 14px;
+}
+.wl-step-h {
+  font-size: clamp(17px, 1.5vw, 20px); font-weight: 700;
+  color: #fff; letter-spacing: -.025em;
+  margin-bottom: 10px; word-break: keep-all;
+}
+.wl-step-d {
+  font-size: 14px; line-height: 1.7;
+  color: rgba(255,255,255,.68); word-break: keep-all;
+  margin-bottom: 20px;
+}
+
+/* 단계별 미리보기 그림 */
+.wl-step-fig {
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 6px;
+  aspect-ratio: 4 / 3;
+  padding: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+.wl-step-fig svg { width: 100%; height: 100%; }
+
+.wl-flow-cta { margin-top: clamp(36px, 5vh, 56px); }
+
+@media (max-width: 1000px) {
+  .wl-flow { min-height: auto; }
+  .wl-steps { grid-template-columns: repeat(2, 1fr); gap: 28px 0; }
+  .wl-step:nth-child(3) { border-left: none; padding-left: 0; }
+}
+@media (max-width: 620px) {
+  .wl-steps { grid-template-columns: 1fr; gap: 24px; }
+  .wl-step { border-left: none; padding-left: 0; }
+}
+
+
+/* ══ 문의 CTA ══════════════════════════════════ */
+.wl-contact {
+  min-height: 72dvh;
+  padding: clamp(56px, 8vh, 96px) clamp(24px, 5vw, 72px);
+  display: flex; flex-direction: column; justify-content: center;
+  background: #F2F5F8;
+}
+
+.wl-contact-inner {
+  max-width: 1080px; margin: 0 auto; width: 100%;
+  text-align: center;
+}
+
+.wl-contact-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; letter-spacing: .18em; color: #2C6FB5;
+  margin-bottom: 18px;
+}
+.wl-contact-title {
+  font-size: clamp(26px, 3.2vw, 42px); font-weight: 700;
+  letter-spacing: -.035em; color: #14293D !important;
+  margin: 0 0 20px; word-break: keep-all;
+}
+.wl-contact-d {
+  font-size: clamp(15px, 1.15vw, 17px); line-height: 1.8;
+  color: #5A6B7C; max-width: 580px; margin: 0 auto 40px;
+  text-align: center !important;
+  word-break: keep-all;
+}
+
+.wl-contact-cta {
+  display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+  margin-bottom: clamp(40px, 6vh, 64px);
+}
+
+/* 자주 묻는 질문 미리보기 */
+.wl-faq-peek {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px; background: #DDE4EB;
+  border: 1px solid #DDE4EB; border-radius: 8px; overflow: hidden;
+}
+.wl-faq-q {
+  background: #fff; padding: 22px 24px; text-align: left;
+  transition: background .18s ease;
+}
+.wl-faq-q:hover { background: #FAFCFE; }
+.wl-faq-q-t {
+  font-size: 14.5px; font-weight: 600; color: #14293D;
+  margin-bottom: 8px; word-break: keep-all;
+}
+.wl-faq-q-a {
+  font-size: 13px; line-height: 1.65; color: #7A8794;
+  word-break: keep-all;
+}
+
+@media (max-width: 900px) {
+  .wl-contact  { min-height: auto; }
+  .wl-faq-peek { grid-template-columns: 1fr; }
+}
+
+.wl-btn-ghost-lt {
+  background: #fff; color: #2C6FB5 !important;
+
+  border: 1px solid #C9D9EA;
+}
+.wl-btn-ghost-lt:hover { border-color: #2C6FB5; transform: translateY(-2px); }

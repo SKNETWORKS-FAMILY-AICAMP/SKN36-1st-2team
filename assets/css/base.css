@@ -1,0 +1,125 @@
+*, *::before, *::after { box-sizing: border-box; }
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+
+
+
+:root {
+  --asphalt:  #17191A;
+  --asphalt2: #0E1011;
+  --concrete: #E4E6E3;
+  --paper:    #F6F7F5;
+
+  /* 신뢰감 — 짙은 남색 계열 */
+  --navy:     #0B1B2B;   /* nav 바탕 */
+  --brand:    #1B62C4;   /* 주요 액션 */
+  --brand-lt: #4A90E2;   /* 강조·호버 */
+  --sky:      #7FB2F0;   /* 보조 */
+
+  --hz-y:     #F2B705;
+  --hz-r:     #C8102E;
+  --mute:     #8B918E;
+  --nav-h:    58px;
+}
+
+
+
+
+/* ── Streamlit 기본 크롬 제거 ── */
+header[data-testid="stHeader"] { display: none !important; }
+[data-testid="stToolbar"], [data-testid="stDecoration"],
+[data-testid="stStatusWidget"], #MainMenu { display: none !important; }
+[data-testid="stSidebar"],
+[data-testid="stSidebarCollapsedControl"] { display: none !important; }
+
+.block-container,
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"] {
+  padding: 0 !important; margin: 0 !important; max-width: 100% !important;
+}
+[data-testid="stVerticalBlock"] { gap: 0 !important; }
+[data-testid="stAppViewContainer"] { background: var(--concrete); padding: 0 !important; }
+
+html, body { overflow-x: hidden; }
+html, body, [class*="css"] {
+  font-family: 'IBM Plex Sans KR', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── 상단 바 ── */
+.wl-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+  display: flex; align-items: center;
+  justify-content: flex-start;        /* space-between 에서 변경 */
+  gap: clamp(28px, 4vw, 56px);        /* 로고와 메뉴 사이 간격 */
+  height: var(--nav-h); padding: 0 clamp(24px, 5vw, 72px);
+
+  background: rgba(255,255,255,.86);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-bottom: 1px solid #E3E8EE;
+}
+
+.wl-mark {
+  display: flex; align-items: center; gap: 12px;
+  text-decoration: none !important;
+  font-family: 'IBM Plex Sans KR', sans-serif;
+  font-size: 20px; font-weight: 700; letter-spacing: -.03em;
+  color: #1F4E79 !important;
+}
+
+.wl-navlinks {
+  display: flex; gap: clamp(24px, 3vw, 44px);
+  align-items: center; height: 100%;
+}
+.wl-navlinks a {
+  position: relative; display: flex; align-items: center; height: 100%;
+  font-family: 'IBM Plex Sans KR', sans-serif;
+  font-size: 15px; font-weight: 500; letter-spacing: -.02em;
+  color: #6B7785 !important;
+  text-decoration: none !important;
+  transition: color .18s ease; white-space: nowrap;
+}
+.wl-navlinks a:hover { color: #2C6FB5 !important; }
+
+.wl-navlinks a.on { color: #2C6FB5 !important; font-weight: 700; }
+.wl-navlinks a.on::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px;
+  height: 3px; background: #2C6FB5;
+}
+/* nav 가 fixed 라 본문이 밑에 깔린다. 페이지 첫 요소에 이만큼 띄운다 */
+.wl-navpad { height: var(--nav-h); }
+
+@media (max-width: 720px) {
+  .wl-navlinks a { font-size: 11px; letter-spacing: .04em; }
+}
+
+/* ── 스크롤 스냅 ── */
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"] {
+  height: 100vh; overflow-y: auto;
+  scroll-snap-type: y proximity; 
+  scroll-behavior: smooth;
+}
+.wl-hero, .wl-why, .wl-flow, .wl-contact { scroll-snap-align: start; scroll-snap-stop: always; }
+
+@media (max-width: 1000px), (prefers-reduced-motion: reduce) {
+  [data-testid="stAppViewContainer"],
+  [data-testid="stMain"] { scroll-snap-type: none; }
+}
+
+/* ── 푸터 ── */
+.wl-foot {
+  background: #14293D; color: rgba(255,255,255,.52);
+  padding: 34px clamp(24px, 5vw, 72px);
+  font-size: 12.5px; letter-spacing: -.01em;
+}
+.wl-foot-in {
+  max-width: 1400px; margin: 0 auto;
+  display: flex; flex-wrap: wrap; gap: 12px 32px;
+  justify-content: space-between; align-items: center;
+}
+
+@media (max-width: 720px) {
+  .wl-foot-in { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
