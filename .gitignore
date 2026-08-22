@@ -4,3 +4,4 @@ venv/
 __pycache__/
 *.pyc
 database/mysql_data/
+test.py
