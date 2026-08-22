@@ -16,6 +16,9 @@ POPULATION_FILE = DATA_DIR / "전국_인구데이터_전처리완료.xlsx"
 VEHICLE_FILE = DATA_DIR / "자동차등록현황_데이터셋.xlsx"
 BATCH_SIZE = 5_000
 
+# 분석 기간(2023-07~2026-07) 이전에 폐지된 행정구역은 원본을 보존하되 적재에서 제외한다.
+EXCLUDED_REGION_IDS = {"R0167"}
+
 ALLOWED_CATEGORY_MAIN = {"승용", "승합", "화물", "특수"}
 ALLOWED_CATEGORY_SUB = {"관용", "자가용", "영업용"}
 CATEGORY_COLUMNS = {
@@ -58,6 +61,9 @@ def read_region_master() -> pd.DataFrame:
     require_columns(frame, required, "지역마스터")
     for column in required:
         frame[column] = frame[column].map(normalize_text)
+    excluded_count = int(frame["분석지역ID"].isin(EXCLUDED_REGION_IDS).sum())
+    frame = frame[~frame["분석지역ID"].isin(EXCLUDED_REGION_IDS)].copy()
+    print(f"지역마스터 폐지 지역 제외: {excluded_count:,}행 ({sorted(EXCLUDED_REGION_IDS)})")
     if (frame[required] == "").any().any():
         raise ValueError("지역마스터 필수값에 NULL/공백이 있습니다.")
     duplicates = frame[frame.duplicated("분석지역ID", keep=False)]
@@ -94,6 +100,9 @@ def read_vehicle() -> pd.DataFrame:
     require_columns(frame, required, "차량_연속분석")
     for column in ["분석지역ID", "표준시도명", "시군구/연속분석권역"]:
         frame[column] = frame[column].map(normalize_text)
+    excluded_count = int(frame["분석지역ID"].isin(EXCLUDED_REGION_IDS).sum())
+    frame = frame[~frame["분석지역ID"].isin(EXCLUDED_REGION_IDS)].copy()
+    print(f"차량 원본 폐지 지역 제외: {excluded_count:,}행 ({sorted(EXCLUDED_REGION_IDS)})")
     frame["date_ym"] = parse_month(frame["년도-월"], "차량")
     return frame
 
@@ -270,6 +279,8 @@ def validate_database(connection, source_regions: pd.DataFrame, source_populatio
                 "region_name 중복": "SELECT COUNT(*)-COUNT(DISTINCT region_name) FROM region",
                 "NULL": "SELECT COUNT(*) FROM region WHERE region_id IS NULL OR region_name IS NULL",
                 "ID 형식 오류": "SELECT COUNT(*) FROM region WHERE region_id NOT REGEXP '^R[0-9]{4}$'",
+                "폐지 지역": "SELECT COUNT(*) FROM region WHERE region_id='R0167'",
+                "인구 이력 누락": "SELECT COUNT(*) FROM region r LEFT JOIN (SELECT DISTINCT region_id FROM people) p ON p.region_id=r.region_id WHERE p.region_id IS NULL",
             },
             "date": {
                 "전체 월 수": "SELECT COUNT(*) FROM `date`", "최소 월": "SELECT MIN(date_ym) FROM `date`",
@@ -290,6 +301,7 @@ def validate_database(connection, source_regions: pd.DataFrame, source_populatio
                 "date FK 누락": "SELECT COUNT(*) FROM people p LEFT JOIN `date` d ON p.date_ym=d.date_ym WHERE d.date_ym IS NULL",
                 "NULL": "SELECT COUNT(*) FROM people WHERE region_id IS NULL OR date_ym IS NULL OR people_population IS NULL",
                 "ID 형식 오류": "SELECT COUNT(*) FROM people WHERE region_id NOT REGEXP '^R[0-9]{4}$'",
+                "폐지 지역": "SELECT COUNT(*) FROM people WHERE region_id='R0167'",
             },
             "vehicle": {
                 "전체 row 수": "SELECT COUNT(*) FROM vehicle", "지역 개수": "SELECT COUNT(DISTINCT region_id) FROM vehicle",
@@ -302,6 +314,7 @@ def validate_database(connection, source_regions: pd.DataFrame, source_populatio
                 "NULL": "SELECT COUNT(*) FROM vehicle WHERE category_id IS NULL OR region_id IS NULL OR date_ym IS NULL OR vehicle_count IS NULL",
                 "총계 main": "SELECT COUNT(*) FROM vehicle v JOIN category c ON v.category_id=c.category_id WHERE c.category_main='총계'",
                 "계 sub": "SELECT COUNT(*) FROM vehicle v JOIN category c ON v.category_id=c.category_id WHERE c.category_sub='계'",
+                "폐지 지역": "SELECT COUNT(*) FROM vehicle WHERE region_id='R0167'",
             },
         }
         results = {}
@@ -340,7 +353,7 @@ def validate_database(connection, source_regions: pd.DataFrame, source_populatio
         print(f"차량 wide/long/DB: {source_vehicle_rows:,}/{expected_vehicle_rows:,}/{results['vehicle']['전체 row 수']:,}")
         if results["vehicle"]["전체 row 수"] != expected_vehicle_rows:
             raise ValueError("차량 wide→long/DB 행 수가 다릅니다.")
-        failure_keys = {"중복", "NULL", "FK 누락", "형식 오류", "총계 main", "계 sub"}
+        failure_keys = {"중복", "NULL", "FK 누락", "형식 오류", "총계 main", "계 sub", "폐지 지역", "인구 이력 누락"}
         for table, values in results.items():
             for name, value in values.items():
                 if any(key in name for key in failure_keys) and value != 0:
