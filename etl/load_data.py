@@ -213,7 +213,7 @@ def insert_frame(cursor, sql: str, frame: pd.DataFrame, columns: list[str]) -> N
 
 
 def rebuild_analysis_schema(connection) -> None:
-    """Recreate only analysis tables; member and inquiry are intentionally untouched."""
+    """Recreate only analysis tables; admin and inquiry are intentionally untouched."""
     statements = [
         "DROP TABLE IF EXISTS vehicle", "DROP TABLE IF EXISTS people",
         "DROP TABLE IF EXISTS category", "DROP TABLE IF EXISTS `date`", "DROP TABLE IF EXISTS region",
@@ -251,7 +251,7 @@ def rebuild_analysis_schema(connection) -> None:
         for statement in statements:
             cursor.execute(statement)
     connection.commit()
-    print("분석 테이블 5개 스키마 재구축 완료 (member/inquiry 유지)")
+    print("분석 테이블 5개 스키마 재구축 완료 (admin/inquiry 유지)")
 
 
 def load_all(connection, regions, dates, categories, people, vehicle) -> None:
