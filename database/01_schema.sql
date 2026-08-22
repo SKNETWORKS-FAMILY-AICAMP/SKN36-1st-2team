@@ -51,14 +51,16 @@ CREATE TABLE category (
 
 
 -- =============================================
--- 5. 회원 테이블
+-- 5. 관리자 테이블
 -- =============================================
 
-CREATE TABLE member (
-    user_id INT NOT NULL AUTO_INCREMENT COMMENT '회원아이디',
-    user_pwd VARCHAR(20) NOT NULL COMMENT '회원비밀번호',
+CREATE TABLE admin (
+    admin_id INT NOT NULL AUTO_INCREMENT COMMENT '관리자아이디',
+    admin_login_id VARCHAR(50) NOT NULL COMMENT '관리자로그인아이디',
+    admin_pwd VARCHAR(255) NOT NULL COMMENT '관리자비밀번호',
 
-    PRIMARY KEY (user_id)
+    PRIMARY KEY (admin_id),
+    UNIQUE KEY uq_admin_login_id (admin_login_id)
 );
 
 

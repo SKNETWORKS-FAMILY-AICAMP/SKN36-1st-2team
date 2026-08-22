@@ -85,6 +85,7 @@ class MySQLDB:
         """쓰기 SQL을 트랜잭션으로 실행하고 생성된 AUTO_INCREMENT ID를 반환한다."""
         self._connection.ping(reconnect=True)
         try:
+            # autocommit 연결에서도 명시적으로 트랜잭션을 시작해 성공과 실패를 구분한다.
             self._connection.begin()
             with self._connection.cursor() as cursor:
                 cursor.execute(sql, params)
@@ -92,6 +93,7 @@ class MySQLDB:
             self._connection.commit()
             return inserted_id
         except Exception:
+            # 실행 중 오류가 나면 일부 변경도 남지 않도록 트랜잭션을 되돌린다.
             self._connection.rollback()
             raise
 

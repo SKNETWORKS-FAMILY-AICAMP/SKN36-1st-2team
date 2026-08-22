@@ -161,7 +161,7 @@ def create_inquiry(
     inquiry_content: str,
     privacy_agreed: bool,
 ) -> dict[str, bool | int | str]:
-    """문의 화면 입력값을 검증하고 정상일 때만 MySQL에 저장한다."""
+    """Streamlit 문의 입력값을 검증하고 정상일 때만 MySQL에 저장한다."""
     fields = [
         ("company_name", company_name, "회사명", 100),
         ("manager_name", manager_name, "담당자명", 50),
@@ -181,6 +181,7 @@ def create_inquiry(
             }
         cleaned[key] = normalized
 
+    # 최소한 아이디@도메인.확장자 형태인지 확인한다.
     if re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", cleaned["email"]) is None:
         return {"success": False, "message": "올바른 이메일 형식을 입력해주세요."}
 
@@ -192,6 +193,7 @@ def create_inquiry(
         if normalized_contact is not None and len(normalized_contact) > 30:
             return {"success": False, "message": "연락처는 30자 이하로 입력해주세요."}
 
+    # 개인정보 동의가 정확히 True가 아니면 INSERT 함수를 호출하지 않는다.
     if privacy_agreed is not True:
         return {"success": False, "message": "개인정보 수집에 동의해주세요."}
 

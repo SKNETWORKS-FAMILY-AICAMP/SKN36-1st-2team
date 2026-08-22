@@ -70,6 +70,7 @@ class InquiryServiceTest(unittest.TestCase):
         self.assertEqual(result["inquiry_id"], 31)
         _, params = self.db.calls[0]
         self.assertEqual(params[0], "테스트물류")
+        self.assertEqual(params[3], "010-1234-5678")
         self.assertEqual(params[5], "물류 거점의 '점수'가 궁금합니다.")
 
     def test_blank_required_fields_do_not_insert(self) -> None:
@@ -89,22 +90,31 @@ class InquiryServiceTest(unittest.TestCase):
                 self.assertFalse(result["success"])
                 self.assertEqual(db.calls, [])
 
-    def test_optional_contact_is_stored_as_none(self) -> None:
-        self.values["contact"] = "   "
-        result = create_inquiry(db=self.db, **self.values)
-
-        self.assertTrue(result["success"])
-        self.assertIsNone(self.db.calls[0][1][3])
-
-    def test_invalid_email_and_privacy_disagreement_do_not_insert(self) -> None:
-        for key, value in (("email", "invalid-email"), ("privacy_agreed", False)):
-            with self.subTest(key=key):
+    def test_contact_is_optional(self) -> None:
+        for contact in (None, "   "):
+            with self.subTest(contact=contact):
                 db = FakeDB()
                 values = dict(self.values)
-                values[key] = value
+                values["contact"] = contact
                 result = create_inquiry(db=db, **values)
-                self.assertFalse(result["success"])
-                self.assertEqual(db.calls, [])
+                self.assertTrue(result["success"])
+                self.assertIsNone(db.calls[0][1][3])
+
+    def test_invalid_email_does_not_insert(self) -> None:
+        db = FakeDB()
+        values = dict(self.values)
+        values["email"] = "invalid-email"
+        result = create_inquiry(db=db, **values)
+        self.assertFalse(result["success"])
+        self.assertEqual(db.calls, [])
+
+    def test_privacy_disagreement_does_not_insert(self) -> None:
+        db = FakeDB()
+        values = dict(self.values)
+        values["privacy_agreed"] = False
+        result = create_inquiry(db=db, **values)
+        self.assertFalse(result["success"])
+        self.assertEqual(db.calls, [])
 
 
 class InquiryIntegrationTest(unittest.TestCase):

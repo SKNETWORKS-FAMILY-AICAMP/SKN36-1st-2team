@@ -323,6 +323,8 @@ def insert_inquiry(
     privacy_agreed: bool,
 ) -> int:
     """검증된 문의를 저장하고 DB가 자동 생성한 inquiry_id를 반환한다."""
+    # inquiry_id, status, created_at은 DB가 자동 생성하므로 INSERT 컬럼에서 제외한다.
+    # 모든 사용자 입력은 %s 파라미터로 전달하며 SQL 문자열에 직접 합치지 않는다.
     return db.execute(
         """INSERT INTO inquiry (
             company_name,
