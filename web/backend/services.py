@@ -21,20 +21,45 @@ from .queries import (
     get_vehicle_history,
     insert_inquiry,
 )
-from .scoring import calculate_logistics_score, shift_year_month, validate_weight
+from .scoring import (
+    calculate_growth,
+    calculate_logistics_score,
+    shift_year_month,
+    validate_weight,
+)
 
 
 def get_dashboard_summary(db: MySQLDB, year_month: str) -> dict[str, Any]:
-    """메인 화면의 지역 수와 특정 월 전국 화물차 합계를 한 dict로 반환한다."""
+    """메인 화면의 지역 수와 전국 화물차 현황을 한 dict로 반환한다."""
     # 서로 다른 SQL 결과를 각각 조회한 뒤 Streamlit metric에서 바로 쓸 수 있게 합친다.
+    previous_year_month = shift_year_month(year_month, -12)
     region_result = get_region_count(db)
     freight_result = get_national_freight_count(db, year_month)
+    previous_freight_result = get_national_freight_count(db, previous_year_month)
+
+    national_freight_count = (
+        freight_result["vehicle_count"] if freight_result is not None else None
+    )
+    previous_freight_count = (
+        previous_freight_result["vehicle_count"]
+        if previous_freight_result is not None
+        else None
+    )
+    year_over_year_growth_rate = calculate_growth(
+        national_freight_count,
+        previous_freight_count,
+    )
+
     return {
         "date": year_month,
+        "previous_year_month": previous_year_month,
         "region_count": region_result["region_count"],
         # 해당 월 데이터가 없으면 화면이 이를 구분할 수 있도록 None을 유지한다.
-        "national_freight_count": (
-            freight_result["vehicle_count"] if freight_result is not None else None
+        "national_freight_count": national_freight_count,
+        "year_over_year_growth_rate": (
+            round(year_over_year_growth_rate, 1)
+            if year_over_year_growth_rate is not None
+            else None
         ),
     }
 
