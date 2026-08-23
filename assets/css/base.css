@@ -32,14 +32,6 @@ header[data-testid="stHeader"] { display: none !important; }
 [data-testid="stSidebar"],
 [data-testid="stSidebarCollapsedControl"] { display: none !important; }
 
-.block-container,
-[data-testid="stMainBlockContainer"],
-[data-testid="stAppViewBlockContainer"] {
-  padding: 0 !important; margin: 0 !important; max-width: 100% !important;
-}
-[data-testid="stVerticalBlock"] { gap: 0 !important; }
-[data-testid="stAppViewContainer"] { background: var(--concrete); padding: 0 !important; }
-
 html, body { overflow-x: hidden; }
 html, body, [class*="css"] {
   font-family: 'IBM Plex Sans KR', system-ui, sans-serif;
@@ -92,20 +84,6 @@ html, body, [class*="css"] {
 
 @media (max-width: 720px) {
   .wl-navlinks a { font-size: 11px; letter-spacing: .04em; }
-}
-
-/* ── 스크롤 스냅 ── */
-[data-testid="stAppViewContainer"],
-[data-testid="stMain"] {
-  height: 100vh; overflow-y: auto;
-  scroll-snap-type: y proximity; 
-  scroll-behavior: smooth;
-}
-.wl-hero, .wl-why, .wl-flow, .wl-contact { scroll-snap-align: start; scroll-snap-stop: always; }
-
-@media (max-width: 1000px), (prefers-reduced-motion: reduce) {
-  [data-testid="stAppViewContainer"],
-  [data-testid="stMain"] { scroll-snap-type: none; }
 }
 
 /* ── 푸터 ── */
