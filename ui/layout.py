@@ -49,8 +49,14 @@ def setup(page: str = "", active: str = "",
         initial_sidebar_state="collapsed",
     )
 
-    # ── CSS : base + 페이지별 + 배경 변수 ──
+    # ── CSS : base + 공용 컴포넌트 + 페이지별 + 배경 변수 ──
+    # components.css 는 시군구 상세 패널처럼 여러 페이지에서 재사용할
+    # 컴포넌트 스타일을 모아둔 시트다. base.css 의 색상 토큰(--brand 등)을
+    # 그대로 참조하므로 반드시 base.css 다음, 페이지별 css 이전에 온다.
     css = (CSS_DIR / "base.css").read_text(encoding="utf-8")
+    components_css = CSS_DIR / "components.css"
+    if components_css.exists():
+        css += "\n" + components_css.read_text(encoding="utf-8")
     if page:
         css += "\n" + (CSS_DIR / f"{page}.css").read_text(encoding="utf-8")
     css += "\n" + _bg_var(hero_gif)

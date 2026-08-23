@@ -1,3 +1,24 @@
+/* ── 검색 바 : 인구 슬라이더 정렬 ────────────────── */
+/* 슬라이더는 트랙 위에 min/max 숫자가 붙어 그만큼 아래로 밀린다.
+   숫자는 남겨야 하므로 슬라이더를 올리는 대신
+   같은 줄의 다른 위젯을 내려 중심선을 맞춘다.
+   transform 은 실제 높이를 바꾸지 않아 아래 지도와 패널이
+   밀리지 않는다. */
+div[data-testid="stSlider"] {
+  padding-top: 6px;
+}
+
+div[data-testid="stSelectbox"],
+div[data-testid="stMultiSelect"] {
+  transform: translateY(10px);
+}
+
+div[data-testid="stSliderTickBarMin"],
+div[data-testid="stSliderTickBarMax"] {
+  font-size: 12px !important;
+  color: #8B97A4 !important;
+}
+
 /* wl-detail-*, wl-evidence-*, wl-score-* : 시군구 상세 패널 컴포넌트.
    base.css 의 --brand / --brand-lt / --navy / --mute / --concrete 토큰을
    그대로 쓴다. 지도 페이지뿐 아니라 다른 페이지에서도 같은 패널을
