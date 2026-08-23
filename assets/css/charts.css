@@ -1,0 +1,97 @@
+/* ══ 그래프 영역 ═══════════════════════════════════ */
+/* 클래스 앞에 wl-g- 를 쓴다. 다른 곳의 wl-chart-* 규칙과
+   이름이 겹쳐 점선이 딸려오던 문제를 피하기 위한 것. */
+
+.wl-g-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #14293D;
+  letter-spacing: -0.2px;
+  margin: 26px 0 14px;
+  padding-top: 22px;
+  border-top: 1px solid #E8EDF2;
+}
+
+.wl-g-sub {
+  font-size: 15px;
+  font-weight: 600;
+  color: #14293D;
+  letter-spacing: -0.2px;
+  margin: 0 0 4px;
+}
+
+/* 준비 중 자리 — 카드 테두리 안에 있으므로 선을 한 겹 더 두르지 않는다 */
+.wl-g-ph {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 6px 0 10px;
+  border: none;
+  border-radius: 10px;
+  background: #F6F9FC;
+  color: #7A8899;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.wl-g-ph span {
+  font-size: 13px;
+  font-weight: 400;
+  color: #A3AFBB;
+  letter-spacing: 0;
+}
+
+/* ── 차트 카드 ─────────────────────────────────── */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+  background: #FFFFFF;
+  border: 1px solid #E8EDF2 !important;
+  border-radius: 12px;
+  padding: 18px 20px 12px;
+  box-shadow: 0 1px 2px rgba(20, 41, 61, 0.04);
+  height: 100%;
+}
+
+div[data-testid="column"] > div {
+  height: 100%;
+}
+
+/* ── 지표 카드 ─────────────────────────────────── */
+div[data-testid="stMetric"],
+div[data-testid="metric-container"],
+div[class*="stMetric"] {
+  background: #FFFFFF !important;
+  border: 1px solid #E8EDF2 !important;
+  border-radius: 12px !important;
+  padding: 16px 18px !important;
+  box-shadow: 0 1px 2px rgba(20, 41, 61, 0.04);
+}
+
+div[data-testid="stMetricLabel"],
+div[data-testid="stMetricLabel"] p {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #6B7A89 !important;
+  letter-spacing: -0.1px;
+}
+
+div[data-testid="stMetricValue"] {
+  font-size: 30px !important;
+  font-weight: 700 !important;
+  color: #14293D !important;
+  letter-spacing: -0.8px;
+  line-height: 1.25 !important;
+}
+
+div[data-testid="stMetricDelta"] {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+/* ── 보기 전환 라디오 ──────────────────────────── */
+div[data-testid="stRadio"] label p {
+  font-size: 14px !important;
+  color: #3D5266 !important;
+}
