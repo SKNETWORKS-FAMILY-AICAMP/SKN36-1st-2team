@@ -9,12 +9,15 @@ from typing import Iterable, Sequence
 
 import pandas as pd
 
+from region_area import attach_region_areas
+
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = Path(__file__).resolve().parent / "data"
 POPULATION_FILE = DATA_DIR / "전국_인구데이터_전처리완료.xlsx"
 VEHICLE_FILE = DATA_DIR / "자동차등록현황_데이터셋.xlsx"
 BATCH_SIZE = 5_000
+ANALYSIS_TARGET_MONTH = "2026-07"
 
 # 분석 기간(2023-07~2026-07) 이전에 폐지된 행정구역은 원본을 보존하되 적재에서 제외한다.
 EXCLUDED_REGION_IDS = {"R0167"}
@@ -220,6 +223,7 @@ def rebuild_analysis_schema(connection) -> None:
         """CREATE TABLE region (
             region_id CHAR(5) NOT NULL COMMENT '분석지역ID',
             region_name VARCHAR(30) NOT NULL COMMENT '지역이름',
+            area_km2 DECIMAL(14,4) NULL COMMENT 'admdongkor 시군구 면적(km²)',
             PRIMARY KEY (region_id)
         )""",
         """CREATE TABLE `date` (
@@ -258,7 +262,12 @@ def load_all(connection, regions, dates, categories, people, vehicle) -> None:
     with connection.cursor() as cursor:
         for table in ["vehicle", "people", "category", "`date`", "region"]:
             cursor.execute(f"DELETE FROM {table}")
-        insert_frame(cursor, "INSERT INTO region (region_id, region_name) VALUES (%s,%s)", regions, ["region_id", "region_name"])
+        insert_frame(
+            cursor,
+            "INSERT INTO region (region_id, region_name, area_km2) VALUES (%s,%s,%s)",
+            regions,
+            ["region_id", "region_name", "area_km2"],
+        )
         insert_frame(cursor, "INSERT INTO `date` VALUES (%s,%s,%s,%s,%s)", dates, ["date_ym", "date_half", "date_quarter", "date_year", "date_month"])
         insert_frame(cursor, "INSERT INTO category VALUES (%s,%s,%s)", categories, ["category_id", "category_main", "category_sub"])
         insert_frame(cursor, "INSERT INTO people VALUES (%s,%s,%s)", people, ["region_id", "date_ym", "people_population"])
@@ -362,6 +371,12 @@ def validate_database(connection, source_regions: pd.DataFrame, source_populatio
 
 def main() -> None:
     regions = read_region_master()
+    regions, area_version = attach_region_areas(regions, ANALYSIS_TARGET_MONTH)
+    mapped_area_count = int(regions["area_km2"].notna().sum())
+    print(
+        f"지역 면적 매핑: version={area_version or '실패'}, "
+        f"성공={mapped_area_count:,}, 누락={len(regions)-mapped_area_count:,}"
+    )
     population_source = read_population()
     vehicle_source = read_vehicle()
     people = validate_population_region_mapping(population_source, regions)

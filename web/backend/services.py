@@ -10,13 +10,16 @@ from pymysql import MySQLError
 from .db import MySQLDB
 from .queries import (
     get_national_freight_history,
+    get_national_commercial_freight_counts,
     get_national_population,
+    get_national_population_history,
     get_national_freight_count,
     get_national_freight_usage_counts,
     get_national_vehicle_metrics,
     get_population,
     get_population_history,
     get_region,
+    get_region_areas,
     get_region_count,
     get_regions,
     get_vehicle_category_counts,
@@ -28,6 +31,7 @@ from .queries import (
 from .scoring import (
     calculate_growth,
     calculate_logistics_score,
+    calculate_supplemental_metrics,
     normalize_weights,
     shift_year_month,
 )
@@ -296,6 +300,43 @@ def get_logistics_ranking(
     for rank, row in enumerate(ranking, start=1):
         row["rank"] = rank
     return ranking
+
+
+def get_supplemental_logistics_metrics(
+    db: MySQLDB,
+    date: str,
+) -> list[dict[str, Any]]:
+    """화면 상세용 추가 지표의 전국 원값과 백분위 점수를 반환한다."""
+    target_date = shift_year_month(date, 0)
+    months = [shift_year_month(target_date, offset) for offset in range(-36, 1)]
+    vehicle_rows = get_national_vehicle_metrics(db, months)
+    commercial_rows = get_national_commercial_freight_counts(db, months)
+    current_population_rows = get_national_population(db, target_date)
+    previous_population_rows = get_national_population(
+        db, shift_year_month(target_date, -12)
+    )
+    population_history_rows = get_national_population_history(
+        db, months[0], target_date
+    )
+    area_rows = get_region_areas(db)
+    metrics = calculate_supplemental_metrics(
+        target_date=target_date,
+        vehicle_rows=vehicle_rows,
+        commercial_rows=commercial_rows,
+        current_population_rows=current_population_rows,
+        previous_population_rows=previous_population_rows,
+        population_history_rows=population_history_rows,
+        area_rows=area_rows,
+    )
+    return [
+        {
+            "region_code": code,
+            "date": target_date,
+            "raw": values["raw"],
+            "normalized": values["normalized"],
+        }
+        for code, values in sorted(metrics.items())
+    ]
 
 
 def create_inquiry(

@@ -9,10 +9,11 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from load_data import (
-    ROOT, build_categories, build_date_dimension, read_population, read_region_master,
+    ANALYSIS_TARGET_MONTH, ROOT, build_categories, build_date_dimension, read_population, read_region_master,
     read_vehicle, transform_vehicle_to_long, validate_population_region_mapping,
     validate_vehicle_region_mapping,
 )
+from region_area import attach_region_areas
 
 
 OUTPUT = ROOT / "database" / "02_seed.sql"
@@ -42,6 +43,8 @@ def append_frame(lines, table, frame, columns):
 
 def main() -> None:
     regions = read_region_master()
+    regions, area_version = attach_region_areas(regions, ANALYSIS_TARGET_MONTH)
+    print(f"seed 면적 버전: {area_version or '매핑 실패'}")
     population = read_population()
     vehicle_source = read_vehicle()
     people = validate_population_region_mapping(population, regions)
@@ -57,7 +60,7 @@ def main() -> None:
         "DELETE FROM vehicle;", "DELETE FROM people;", "DELETE FROM category;",
         "DELETE FROM `date`;", "DELETE FROM region;", "",
     ]
-    append_frame(lines, "region", regions, ["region_id", "region_name"])
+    append_frame(lines, "region", regions, ["region_id", "region_name", "area_km2"])
     append_frame(lines, "date", dates, ["date_ym", "date_half", "date_quarter", "date_year", "date_month"])
     append_frame(lines, "category", categories, ["category_id", "category_main", "category_sub"])
     append_frame(lines, "people", people, ["region_id", "date_ym", "people_population"])

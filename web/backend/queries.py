@@ -412,6 +412,48 @@ def get_national_vehicle_metrics(
     return rows
 
 
+def get_national_commercial_freight_counts(
+    db: MySQLDB,
+    year_months: list[str],
+) -> list[dict[str, Any]]:
+    """여러 기준월의 지역별 영업용 화물차 등록대수를 반환한다."""
+    if not year_months:
+        return []
+
+    months = sorted({_parse_year_month(value, "year_months") for value in year_months})
+    placeholders = ", ".join(["%s"] * len(months))
+    rows = db.fetch_all(
+        f"""SELECT v.region_id AS region_code,
+                   DATE_FORMAT(v.date_ym, '%%Y-%%m') AS date,
+                   SUM(v.vehicle_count) AS commercial_truck_count
+        FROM vehicle v
+        JOIN category c ON c.category_id = v.category_id
+        WHERE v.date_ym IN ({placeholders})
+          AND c.category_main = %s
+          AND c.category_sub = %s
+        GROUP BY v.region_id, v.date_ym
+        ORDER BY v.region_id, v.date_ym""",
+        tuple([*months, "화물", "영업용"]),
+    )
+    for row in rows:
+        row["commercial_truck_count"] = int(row["commercial_truck_count"])
+    return rows
+
+
+def get_region_areas(db: MySQLDB) -> list[dict[str, Any]]:
+    """전체 분석 지역의 저장된 km² 면적을 반환한다."""
+    rows = db.fetch_all(
+        """SELECT region_id AS region_code, area_km2
+        FROM region
+        ORDER BY region_id"""
+    )
+    for row in rows:
+        row["area_km2"] = (
+            float(row["area_km2"]) if row.get("area_km2") is not None else None
+        )
+    return rows
+
+
 def get_national_population(
     db: MySQLDB,
     year_month: str,
@@ -427,6 +469,36 @@ def get_national_population(
         WHERE date_ym = %s
         ORDER BY region_id""",
         (month,),
+    )
+    for row in rows:
+        row["population"] = int(row["population"])
+    return rows
+
+
+def get_national_population_history(
+    db: MySQLDB,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> list[dict[str, Any]]:
+    """전국 모든 지역의 월별 인구를 선택 기간으로 반환한다."""
+    start, end = _parse_period(start_date, end_date)
+    conditions: list[str] = []
+    params: list[object] = []
+    if start is not None:
+        conditions.append("date_ym >= %s")
+        params.append(start)
+    if end is not None:
+        conditions.append("date_ym <= %s")
+        params.append(end)
+    where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+    rows = db.fetch_all(
+        f"""SELECT region_id AS region_code,
+                   DATE_FORMAT(date_ym, '%%Y-%%m') AS date,
+                   people_population AS population
+        FROM people
+        {where}
+        ORDER BY region_id, date_ym""",
+        tuple(params),
     )
     for row in rows:
         row["population"] = int(row["population"])

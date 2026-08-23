@@ -16,6 +16,7 @@ USE logistics_db;
 CREATE TABLE region (
     region_id CHAR(5) NOT NULL COMMENT '분석지역ID',
     region_name VARCHAR(30) NOT NULL COMMENT '지역이름',
+    area_km2 DECIMAL(14,4) NULL COMMENT 'admdongkor 시군구 면적(km²)',
 
     PRIMARY KEY (region_id)
 );
