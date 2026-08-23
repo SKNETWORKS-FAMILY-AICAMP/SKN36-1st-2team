@@ -1,0 +1,183 @@
+/* wl-detail-*, wl-evidence-*, wl-score-* : 시군구 상세 패널 컴포넌트.
+   base.css 의 --brand / --brand-lt / --navy / --mute / --concrete 토큰을
+   그대로 쓴다. 지도 페이지뿐 아니라 다른 페이지에서도 같은 패널을
+   재사용할 수 있도록 base.css 다음, 페이지별 css 이전 레이어로 둔다. */
+
+/* ── 상단 "지도로" 버튼 ──────────────────────────── */
+/* st.container(key="detail_back_btn") 로 감싼 버튼에만 적용된다. */
+.st-key-detail_back_btn button {
+  border: 1px solid #DDE4EB;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  transition: border-color .15s ease, color .15s ease;
+}
+.st-key-detail_back_btn button:hover {
+  border-color: var(--brand-lt);
+  color: var(--brand);
+}
+.st-key-detail_back_btn button:focus:not(:active) {
+  border-color: var(--brand-lt);
+  color: var(--brand);
+}
+
+/* ── 제목 영역 ──────────────────────────────────── */
+.wl-detail-head {
+  padding-top: 4px;
+  margin-bottom: 20px;
+}
+.wl-detail-sido {
+  font-size: 13px;
+  color: var(--mute);
+  margin-bottom: 4px;
+}
+.wl-detail-name {
+  margin: 0 0 10px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--navy);
+}
+.wl-detail-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(27, 98, 196, .08);
+  color: var(--brand);
+}
+
+/* ── 근거 데이터 카드 ───────────────────────────── */
+.wl-evidence-group { margin-bottom: 18px; }
+
+.wl-evidence-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+.wl-evidence-title::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand-lt);
+}
+/* 카테고리별 점 색상 — 근거 데이터 카드와 점수 카드를 같은 색으로 연결 */
+.wl-cat-industry .wl-evidence-title::before { background: var(--brand); }
+.wl-cat-growth   .wl-evidence-title::before { background: #3B9E6B; }
+.wl-cat-demand   .wl-evidence-title::before { background: var(--hz-y); }
+
+.wl-evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.wl-evidence-card {
+  background: #fff;
+  border: 1px solid #E3E8EE;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.wl-evidence-label {
+  display: block;
+  font-size: 11.5px;
+  color: var(--mute);
+  margin-bottom: 4px;
+}
+.wl-evidence-value {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+/* ── 사이드 패널 점수 : 세로 막대형 ─────────────── */
+/* 지역명은 왼쪽 상세 패널에 이미 크게 나오므로 여기서는
+   종합점수 + 세 세로 막대만 보여준다. */
+.wl-panel.wl-vscore {
+  text-align: center;
+  padding: 28px 20px 22px;
+}
+
+.wl-vscore-total { margin-bottom: 28px; }
+.wl-vscore-total-label {
+  font-size: 12px;
+  color: var(--mute);
+  margin: 0 0 4px;
+}
+.wl-vscore-total-value {
+  font-size: 46px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0;
+  line-height: 1;
+}
+
+.wl-vscore-bars {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 20px;
+  height: 140px;
+  margin-bottom: 10px;
+}
+.wl-vbar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+}
+.wl-vbar-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 6px;
+}
+.wl-vbar-track {
+  width: 28px;
+  height: 110px;
+  background: var(--concrete);
+  border-radius: 6px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+.wl-vbar-fill {
+  width: 100%;
+  border-radius: 6px 6px 0 0;
+}
+/* 왼쪽 근거 데이터 카드의 카테고리 점 색과 동일하게 맞춘다 */
+.wl-vbar-fill.industry { background: var(--brand); }
+.wl-vbar-fill.growth   { background: #3B9E6B; }
+.wl-vbar-fill.demand   { background: var(--hz-y); }
+
+.wl-vscore-labels {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+.wl-vscore-labels span {
+  width: 28px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--mute);
+}
+
+/* ── 아무것도 선택되지 않은 상태 ────────────────── */
+.wl-panel-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--mute);
+  font-size: 13px;
+  line-height: 1.9;
+}

@@ -1,0 +1,276 @@
+/* ══ 데이터 조회 ═══════════════════════════════════
+   base.css 의 랜딩용 규칙(여백 0·스크롤 스냅)을 main.css 로
+   옮겼다면 !important 없이도 먹는다. 아직 base.css 에 남아
+   있다면 이 파일의 !important 가 이를 덮는다.
+
+   레이아웃
+     왼쪽(6)   지도 또는 근거 데이터
+     오른쪽(4) 순위 목록 또는 지역 요약
+   ═══════════════════════════════════════════════ */
+
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"] {
+  height: auto !important;
+  overflow-y: visible !important;
+  scroll-snap-type: none !important;
+  background: #FAFBFC !important;
+}
+
+[data-testid="stVerticalBlock"] { gap: .55rem !important; }
+
+.block-container,
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"] {
+  padding: calc(var(--nav-h) + 22px) clamp(16px, 2.4vw, 36px) 48px !important;
+  max-width: 1600px !important;
+  margin: 0 auto !important;
+}
+
+/* ── 위젯 ─────────────────────────────────────── */
+[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+[data-testid="stMultiSelect"] div[data-baseweb="select"] > div {
+  background: #fff;
+  border: 1px solid #DDE4EB;
+  border-radius: 6px;
+  font-size: 13.5px;
+  min-height: 40px;
+}
+[data-testid="stSlider"] { padding-top: 22px; }
+[data-testid="stRadio"] { padding-top: 18px; }
+[data-testid="stRadio"] > div { gap: 18px; }
+
+/* ── 결과 요약 한 줄 ──────────────────────────── */
+.wl-meta {
+  padding: 20px 4px 14px;
+  font-size: 13px; color: #6B7785;
+}
+.wl-meta b { color: #2C6FB5; }
+
+/* ── 지도 ─────────────────────────────────────── */
+iframe[title^="streamlit_folium"] {
+  background: #F2F5F8;
+  border: 1px solid #E3E8EE;
+  border-radius: 10px;
+}
+
+.wl-legend {
+  display: flex; align-items: center; gap: 5px;
+  padding: 12px 4px 0;
+  font-size: 12px; color: #6B7785;
+}
+.wl-legend > span:first-child {
+  font-weight: 600; color: #14293D; margin-right: 8px;
+}
+.wl-legend i {
+  width: 26px; height: 10px; border-radius: 2px; display: inline-block;
+}
+.wl-legend-min { margin-right: 3px; }
+.wl-legend-max { margin-left: 3px; }
+
+/* ══ 왼쪽 : 근거 데이터 ════════════════════════ */
+.wl-evidence-head {
+  font-size: 12.5px; font-weight: 700; color: #8B97A4;
+  padding: 4px 2px 14px;
+}
+
+.wl-evidence-group { margin-bottom: 20px; }
+
+.wl-evidence-title {
+  display: flex; align-items: baseline; gap: 9px;
+  font-size: 13.5px; font-weight: 600; color: #14293D;
+  margin-bottom: 10px;
+}
+.wl-evidence-title::before {
+  content: ""; width: 8px; height: 8px; border-radius: 50%;
+  background: #4A90E2; align-self: center;
+}
+.wl-cat-industry .wl-evidence-title::before { background: #1B62C4; }
+.wl-cat-growth   .wl-evidence-title::before { background: #3B9E6B; }
+.wl-cat-demand   .wl-evidence-title::before { background: #F2B705; }
+
+.wl-evidence-title b { font-size: 16px; font-weight: 700; color: #14293D; }
+.wl-evidence-title em {
+  font-style: normal; font-size: 12px; color: #8B97A4;
+}
+
+.wl-evidence-grid {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
+}
+.wl-evidence-card {
+  background: #fff;
+  border: 1px solid #E3E8EE;
+  border-radius: 8px;
+  padding: 12px 13px;
+}
+.wl-evidence-label {
+  display: block; font-size: 11.5px; color: #8B97A4; margin-bottom: 5px;
+}
+.wl-evidence-value {
+  display: block; font-size: 16px; font-weight: 600; color: #14293D;
+  letter-spacing: -.02em;
+}
+.wl-evidence-rank {
+  display: inline-block; margin-top: 6px;
+  font-size: 11px; color: #A3AEB9;
+}
+.wl-evidence-rank.wl-top { color: #1E7A4C; font-weight: 600; }
+
+@media (max-width: 1400px) {
+  .wl-evidence-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ══ 오른쪽 : 패널 공통 ════════════════════════ */
+.wl-panel {
+  background: #fff;
+  border: 1px solid #E3E8EE;
+  border-radius: 10px;
+  padding: 24px;
+  min-height: 560px;
+}
+
+/* ── 지역 요약 ────────────────────────────────── */
+.wl-sum-head {
+  padding: 4px 2px 18px;
+}
+.wl-sum-sido { font-size: 12.5px; color: #8B97A4; margin-bottom: 3px; }
+.wl-sum-name {
+  margin: 0 0 12px;
+  font-size: 34px; font-weight: 700;
+  letter-spacing: -.035em; color: #14293D;
+}
+.wl-sum-tags {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+}
+.wl-tag {
+  display: inline-block; padding: 4px 12px; border-radius: 999px;
+  font-size: 12px; font-weight: 700;
+}
+.wl-tag.t0 { background: #E4F0FA; color: #1A5C99; }  /* 미개척 */
+.wl-tag.t1 { background: #E3F3EA; color: #1E7A4C; }  /* 성장 중 */
+.wl-tag.t2 { background: #FDF1E3; color: #97601C; }  /* 포화 */
+.wl-tag.t3 { background: #EFF1F4; color: #6B7785; }  /* 정체 */
+.wl-tag-out {
+  display: inline-block; padding: 4px 12px; border-radius: 999px;
+  font-size: 12px; color: #6B7785;
+  border: 1px solid #DDE4EB; background: #fff;
+}
+.wl-sum-typedesc {
+  margin: 0; font-size: 13px; line-height: 1.7;
+  color: #6B7785; word-break: keep-all;
+}
+
+/* 오른쪽 점수 패널 — 종합점수 · 세 축 · 해석을 세로로 */
+.wl-scorepanel {
+  display: flex; flex-direction: column; gap: 20px;
+}
+
+.wl-sum-total {
+  background: #F4F8FC;
+  border: 1px solid #DDE9F4;
+  border-radius: 10px;
+  padding: 26px 20px;
+  text-align: center;
+}
+.wl-sum-total-label {
+  display: block; font-size: 12px; color: #6B7785; margin-bottom: 4px;
+}
+.wl-sum-total-value {
+  display: block; font-size: 44px; font-weight: 700;
+  color: #2C6FB5; line-height: 1; letter-spacing: -.04em;
+}
+.wl-sum-total-rank {
+  display: block; font-size: 12.5px; color: #8B97A4; margin-top: 8px;
+}
+
+/* 세 축 가로 막대 */
+.wl-sbars {
+  display: flex; flex-direction: column; gap: 17px;
+  padding: 0 2px;
+}
+.wl-sbar-head {
+  display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px;
+}
+.wl-sbar-head span { font-size: 13px; color: #5A6B7C; flex: 1; }
+.wl-sbar-head b { font-size: 14.5px; font-weight: 700; color: #14293D; }
+.wl-sbar-head em {
+  font-style: normal; font-size: 11.5px; color: #A3AEB9; min-width: 38px;
+  text-align: right;
+}
+.wl-sbar-track {
+  height: 7px; background: #EDF1F5; border-radius: 4px; overflow: hidden;
+}
+.wl-sbar-track i { display: block; height: 100%; border-radius: 4px; }
+.wl-sbar-track i.industry { background: #1B62C4; }
+.wl-sbar-track i.growth   { background: #3B9E6B; }
+.wl-sbar-track i.demand   { background: #F2B705; }
+
+/* 해석 문장 */
+.wl-story {
+  list-style: none; margin: 0; padding: 18px 20px;
+  background: #FAFCFE;
+  border: 1px solid #E8EFF6;
+  border-left: 3px solid #2C6FB5;
+  border-radius: 0 10px 10px 0;
+  flex: 1;
+}
+.wl-story li {
+  font-size: 13.5px; line-height: 1.9; color: #4A5A6B;
+  word-break: keep-all;
+}
+.wl-story li + li { margin-top: 8px; }
+
+/* ── 순위 목록 (지역 선택 전) ─────────────────── */
+.wl-rank-head {
+  font-size: 12.5px; font-weight: 700; color: #8B97A4; margin-bottom: 12px;
+}
+.wl-rank { display: flex; flex-direction: column; }
+.wl-rank-row {
+  display: grid; grid-template-columns: 24px 1fr 62px;
+  align-items: center; gap: 10px;
+  padding: 9px 0; border-bottom: 1px solid #EDF1F5;
+}
+.wl-rank-row:last-child { border-bottom: none; }
+.wl-rank-no { font-size: 12px; font-weight: 700; color: #2C6FB5; }
+.wl-rank-name {
+  font-size: 13px; color: #14293D;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wl-rank-val {
+  font-size: 13px; font-weight: 700; color: #14293D; text-align: right;
+}
+
+/* ── 기타 ─────────────────────────────────────── */
+.wl-note {
+  background: #FFF7E8; border: 1px solid #F0DFB8;
+  border-radius: 6px; padding: 10px 14px;
+  font-size: 12.5px; color: #8A6D1B; margin-bottom: 16px;
+}
+
+.wl-panel-empty {
+  display: flex; align-items: center; justify-content: center;
+  text-align: center; color: #9AA6B2;
+  font-size: 13.5px; line-height: 1.9;
+}
+
+.wl-chart-ph {
+  background: #fff;
+  border: 1px dashed #D5DEE7; border-radius: 10px;
+  height: 280px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: #9AA6B2; font-size: 15px; font-weight: 600;
+  margin-top: 8px;
+}
+.wl-chart-ph span {
+  font-size: 12.5px; font-weight: 400; color: #B4BFC9; margin-top: 6px;
+}
+
+@media (max-width: 1100px) {
+  .wl-panel { min-height: 320px; }
+}
+
+/* ── 그래프 제목 ──────────────────────────────── */
+.wl-chart-title {
+  font-size: 13px; font-weight: 600; color: #14293D;
+  padding: 14px 2px 8px;
+}

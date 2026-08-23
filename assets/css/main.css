@@ -317,3 +317,27 @@
   border: 1px solid #C9D9EA;
 }
 .wl-btn-ghost-lt:hover { border-color: #2C6FB5; transform: translateY(-2px); }
+
+
+.block-container,
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"] {
+  padding: 0 !important; margin: 0 !important; max-width: 100% !important;
+}
+[data-testid="stVerticalBlock"] { gap: 0 !important; }
+[data-testid="stAppViewContainer"] { background: var(--concrete); padding: 0 !important; }
+
+
+/* ── 스크롤 스냅 ── */
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"] {
+  height: 100vh; overflow-y: auto;
+  scroll-snap-type: y proximity; 
+  scroll-behavior: smooth;
+}
+.wl-hero, .wl-why, .wl-flow, .wl-contact { scroll-snap-align: start; scroll-snap-stop: always; }
+
+@media (max-width: 1000px), (prefers-reduced-motion: reduce) {
+  [data-testid="stAppViewContainer"],
+  [data-testid="stMain"] { scroll-snap-type: none; }
+}
