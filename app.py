@@ -1,12 +1,43 @@
 import streamlit as st
+from pymysql import MySQLError
+from ui.backend import get_db
 from ui.layout import setup
 from ui.layout import setup,html
 from ui.layout import footer
+from web.backend import get_dashboard_summary
 # setup(page="main", active="서비스 소개", hero_gif="hero.gif")
 
 setup(page="main", active="서비스 소개",navpad=False)
 
-HERO = """
+TARGET_MONTH = "2026-07"
+
+
+@st.cache_data(ttl=3600)
+def load_dashboard_summary():
+    return get_dashboard_summary(get_db(), TARGET_MONTH)
+
+
+try:
+    dashboard = load_dashboard_summary()
+except (MySQLError, OSError, ValueError):
+    dashboard = {
+        "national_freight_count": None,
+        "year_over_year_growth_rate": None,
+        "region_count": None,
+    }
+
+
+def display_number(value, suffix="", decimals=0):
+    if value is None:
+        return "데이터 없음"
+    return f"{value:,.{decimals}f}{suffix}"
+
+
+freight_count = display_number(dashboard["national_freight_count"])
+growth_rate = display_number(dashboard["year_over_year_growth_rate"], "%", decimals=1)
+region_count = display_number(dashboard["region_count"])
+
+HERO = f"""
 <section class="wl-hero">
 <div class="wl-hero-inner">
 
@@ -27,17 +58,17 @@ HERO = """
 <div class="wl-stats">
 <div class="wl-stat">
 <div class="wl-stat-l">전국 화물차 등록대수</div>
-<div class="wl-stat-n">3,612,480</div>
+<div class="wl-stat-n">{freight_count}</div>
 <div class="wl-stat-s">2026년 7월 기준</div>
 </div>
 <div class="wl-stat">
 <div class="wl-stat-l">전년 동월 대비 증가율</div>
-<div class="wl-stat-n">2.4%</div>
+<div class="wl-stat-n">{growth_rate}</div>
 <div class="wl-stat-s">2025.07 &#8594; 2026.07</div>
 </div>
 <div class="wl-stat">
 <div class="wl-stat-l">분석 대상 지역</div>
-<div class="wl-stat-n">249</div>
+<div class="wl-stat-n">{region_count}</div>
 <div class="wl-stat-s">시군구 단위 &#183; 37개월</div>
 </div>
 </div>
@@ -289,4 +320,4 @@ CONTACT = """
 """
 
 html(CONTACT)
-footer()  
+footer()

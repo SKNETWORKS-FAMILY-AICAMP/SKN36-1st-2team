@@ -108,6 +108,184 @@ def percentile_scores(values: dict[str, float | int | None]) -> dict[str, float 
         index = end
     return result
 
+
+def calculate_ratio(
+    numerator: int | float | None,
+    denominator: int | float | None,
+    scale: float = 1.0,
+) -> float | None:
+    """두 값의 안전한 비율을 반환하며 값이 없거나 분모가 0이면 None을 반환한다."""
+    if numerator is None or denominator is None or denominator == 0:
+        return None
+    return numerator / denominator * scale
+
+
+def calculate_trend_persistence(
+    monthly_counts: dict[str, int | None],
+    target_date: str,
+    require_complete: bool = True,
+    scale: float = 1.0,
+) -> float | None:
+    """기준월까지 유효한 최대 25개 YoY 중 양수인 비율을 반환한다."""
+    positive_months = 0
+    valid_months = 0
+    for offset in range(-24, 1):
+        month = shift_year_month(target_date, offset)
+        previous_month = shift_year_month(month, -12)
+        growth = calculate_growth(
+            monthly_counts.get(month),
+            monthly_counts.get(previous_month),
+        )
+        if growth is None:
+            if require_complete:
+                return None
+            continue
+        valid_months += 1
+        if growth > 0:
+            positive_months += 1
+    if valid_months == 0:
+        return None
+    return positive_months / valid_months * scale
+
+
+def calculate_supplemental_metrics(
+    target_date: str,
+    vehicle_rows: list[dict[str, Any]],
+    commercial_rows: list[dict[str, Any]],
+    current_population_rows: list[dict[str, Any]],
+    previous_population_rows: list[dict[str, Any]],
+    population_history_rows: list[dict[str, Any]] | None = None,
+    area_rows: list[dict[str, Any]] | None = None,
+) -> dict[str, dict[str, dict[str, float | None]]]:
+    """화면용 추가 지표 원값과 전국 백분위 점수를 계산한다."""
+    target = shift_year_month(target_date, 0)
+    previous = shift_year_month(target, -12)
+    truck_by_region_month = {
+        (row["region_code"], row["date"]): row["truck_count"]
+        for row in vehicle_rows
+    }
+    total_by_region = {
+        row["region_code"]: row["total_vehicle_count"]
+        for row in vehicle_rows if row["date"] == target
+    }
+    commercial_by_region_month = {
+        (row["region_code"], row["date"]): row["commercial_truck_count"]
+        for row in commercial_rows
+    }
+    current_population = {
+        row["region_code"]: row["population"] for row in current_population_rows
+    }
+    previous_population = {
+        row["region_code"]: row["population"] for row in previous_population_rows
+    }
+    population_by_region_month = {
+        (row["region_code"], row["date"]): row["population"]
+        for row in (population_history_rows or [])
+    }
+    area_by_region = {
+        row["region_code"]: row.get("area_km2") for row in (area_rows or [])
+    }
+    region_codes = {
+        row["region_code"] for row in vehicle_rows
+    } | set(current_population) | set(previous_population) | set(area_by_region)
+
+    national_truck = sum(
+        row["truck_count"] for row in vehicle_rows if row["date"] == target
+    )
+    national_total = sum(total_by_region.values())
+    national_truck_ratio = calculate_ratio(national_truck, national_total)
+
+    raw_by_code: dict[str, dict[str, float | None]] = {}
+    for code in region_codes:
+        truck_current = truck_by_region_month.get((code, target))
+        truck_previous = truck_by_region_month.get((code, previous))
+        commercial_current = commercial_by_region_month.get((code, target))
+        commercial_previous = commercial_by_region_month.get((code, previous))
+        local_ratio = calculate_ratio(truck_current, total_by_region.get(code))
+        lq = calculate_ratio(local_ratio, national_truck_ratio)
+        commercial_share = calculate_ratio(commercial_current, truck_current, 100.0)
+        truck_history = {
+            date: count
+            for (region_code, date), count in truck_by_region_month.items()
+            if region_code == code
+        }
+        persistence = calculate_trend_persistence(truck_history, target)
+        commercial_delta = (
+            commercial_current - commercial_previous
+            if commercial_current is not None and commercial_previous is not None
+            else None
+        )
+        truck_delta = (
+            truck_current - truck_previous
+            if truck_current is not None and truck_previous is not None
+            else None
+        )
+        conversion = calculate_ratio(commercial_delta, truck_delta)
+        population_growth = calculate_growth(
+            current_population.get(code), previous_population.get(code)
+        )
+        population_history = {
+            date: population
+            for (region_code, date), population in population_by_region_month.items()
+            if region_code == code
+        }
+        population_persistence = calculate_trend_persistence(
+            population_history,
+            target,
+            require_complete=False,
+            scale=100.0,
+        )
+        area_km2 = area_by_region.get(code)
+        population_density = (
+            calculate_ratio(current_population.get(code), area_km2)
+            if area_km2 is not None and area_km2 > 0
+            else None
+        )
+        raw_by_code[code] = {
+            "location_quotient": round(lq, 4) if lq is not None else None,
+            "commercial_truck_share": (
+                round(commercial_share, 4) if commercial_share is not None else None
+            ),
+            "trend_persistence": (
+                round(persistence, 4) if persistence is not None else None
+            ),
+            "commercial_conversion_rate": (
+                round(conversion, 4) if conversion is not None else None
+            ),
+            "population_yoy_growth": (
+                round(population_growth, 4) if population_growth is not None else None
+            ),
+            "population_trend_persistence": (
+                round(population_persistence, 4)
+                if population_persistence is not None else None
+            ),
+            "area_km2": round(area_km2, 4) if area_km2 is not None else None,
+            "population_density": (
+                round(population_density, 4) if population_density is not None else None
+            ),
+        }
+
+    scored_metrics = [
+        metric for metric in next(iter(raw_by_code.values()), {})
+        if metric != "area_km2"
+    ]
+    normalized_by_metric = {
+        f"{metric}_score": percentile_scores(
+            {code: raw[metric] for code, raw in raw_by_code.items()}
+        )
+        for metric in scored_metrics
+    }
+    return {
+        code: {
+            "raw": raw,
+            "normalized": {
+                metric: round(scores.get(code), 4) if scores.get(code) is not None else None
+                for metric, scores in normalized_by_metric.items()
+            },
+        }
+        for code, raw in raw_by_code.items()
+    }
+
 # 계산 순서 : 원본 값 → 화물차 비중·YoY·가속도 → 전국 백분위 → 산업성·성장성·수요성 → 사용자 가중치 정규화 → 최종점수
 def calculate_logistics_score(
     region: dict[str, Any],
