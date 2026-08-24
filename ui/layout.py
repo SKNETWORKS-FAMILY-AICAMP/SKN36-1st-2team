@@ -13,7 +13,7 @@ NAV_LINKS = [
     ("서비스 소개",   "/"),
     ("데이터 조회",   "/data_search"),
     ("유망지역 추천", "/recommend"),
-    ("FAQ · 문의",   "/문의"),
+    ("FAQ · 문의",   "/inquiry"),
 ]
 
 

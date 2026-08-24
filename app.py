@@ -51,8 +51,8 @@ HERO = f"""
 </p>
 
 <div class="wl-cta-row">
-<a class="wl-btn wl-btn-primary" href="/유망지역_추천" target="_self">유망지역 추천 받기</a>
-<a class="wl-btn wl-btn-ghost"   href="/데이터_조회"   target="_self">데이터 먼저 보기</a>
+<a class="wl-btn wl-btn-primary" href="/recommend" target="_self">유망지역 추천 받기</a>
+<a class="wl-btn wl-btn-ghost"   href="/data_search" target="_self">데이터 먼저 보기</a>
 </div>
 
 <div class="wl-stats">
@@ -287,8 +287,8 @@ CONTACT = f"""
     </div>
 
     <div class="wl-contact-cta">
-      <a class="wl-btn wl-btn-primary" href="/문의" target="_self">문의 남기기</a>
-      <a class="wl-btn wl-btn-ghost-lt" href="/문의" target="_self">자주 묻는 질문</a>
+      <a class="wl-btn wl-btn-primary" href="/inquiry" target="_self">문의 남기기</a>
+      <a class="wl-btn wl-btn-ghost-lt" href="/inquiry" target="_self">자주 묻는 질문</a>
     </div>
 
     <div class="wl-faq-peek">
