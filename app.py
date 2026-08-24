@@ -46,7 +46,7 @@ HERO = f"""
 </h1>
 
 <p class="wl-sub">
-전국 249개 시군구의 화물차&#183;인구 데이터를 분석해,
+전국 {region_count}개 시군구의 화물차&#183;인구 데이터를 분석해,
 기업이 어디에 거점을 두면 좋을지 알려드립니다.
 </p>
 
@@ -125,7 +125,7 @@ WHY = f"""
             <div class="wl-why-h">창고가 아니라 지역 가능성을 봅니다</div>
             <div class="wl-why-d">
               부동산 매물은 지금 나와 있는 창고만 보여줍니다.
-              웨이로지는 249개 시군구의 차량 등록과 인구를 겹쳐,
+              웨이로지는 {region_count}개 시군구의 차량 등록과 인구를 겹쳐,
               <b>아직 창고가 없는 곳</b>까지 후보에 올립니다.
             </div>
           </div>
@@ -230,7 +230,7 @@ FLOW = f"""
         <div class="wl-step-no">STEP 01</div>
         <div class="wl-step-h">지역 탐색</div>
         <div class="wl-step-d">
-          전국 249개 시군구가 지표별로 색칠된 지도에서
+          전국 {region_count}개 시군구가 지표별로 색칠된 지도에서
           어디가 짙은지 먼저 봅니다.
         </div>
         <div class="wl-step-fig">{FIG_MAP}</div>
@@ -250,7 +250,7 @@ FLOW = f"""
         <div class="wl-step-no">STEP 03</div>
         <div class="wl-step-h">맞춤 순위</div>
         <div class="wl-step-d">
-          조정된 가중치로 249개 지역을 다시 계산해
+          조정된 가중치로 {region_count}개 지역을 다시 계산해
           상위 후보를 정렬합니다.
         </div>
         <div class="wl-step-fig">{FIG_RANK}</div>
@@ -274,7 +274,7 @@ FLOW = f"""
 
 html(FLOW)
 
-CONTACT = """
+CONTACT = f"""
 <section class="wl-contact">
   <div class="wl-contact-inner">
 
@@ -310,7 +310,7 @@ CONTACT = """
         <div class="wl-faq-q-t">데이터는 언제까지인가요?</div>
         <div class="wl-faq-q-a">
           2023년 7월부터 2026년 7월까지 37개월,
-          전국 249개 시군구를 월 단위로 봅니다.
+          전국 {region_count}개 시군구를 월 단위로 봅니다.
         </div>
       </div>
     </div>

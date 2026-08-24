@@ -303,15 +303,22 @@ def get_logistics_score(
     if region is None:
         return None
 
-    # 성장성에는 기준월과 3·6·12개월 전 화물차 수가 필요하다.
-    required_months = [
-        target_date,
-        shift_year_month(target_date, -3),
-        shift_year_month(target_date, -6),
-        shift_year_month(target_date, -12),
-    ]
+    # 추세 지속성·안정성·12개월 가속도에 동일한 37개월 창을 사용한다.
+    required_months = [shift_year_month(target_date, offset) for offset in range(-36, 1)]
     vehicle_rows = get_national_vehicle_metrics(db, required_months)
+    commercial_rows = get_national_commercial_freight_counts(db, required_months)
     population_rows = get_national_population(db, target_date)
+    previous_population_rows = get_national_population(
+        db, shift_year_month(target_date, -12)
+    )
+    population_history_rows = get_national_population_history(
+        db, required_months[0], target_date
+    )
+    area_rows = get_region_areas(db)
+    supplemental_metrics = calculate_supplemental_metrics(
+        target_date, vehicle_rows, commercial_rows, population_rows,
+        previous_population_rows, population_history_rows, area_rows,
+    )
 
     # scoring.py는 DB를 모르고 전달받은 원본 값만으로 백분위와 점수를 계산한다.
     return calculate_logistics_score(
@@ -322,6 +329,7 @@ def get_logistics_score(
         industry_weight=industry_weight,
         growth_weight=growth_weight,
         demand_weight=demand_weight,
+        supplemental_metrics=supplemental_metrics,
     )
 
 
@@ -339,17 +347,24 @@ def get_logistics_ranking(
 
     target_date = shift_year_month(date, 0)
     normalize_weights(industry_weight, growth_weight, demand_weight)
-    required_months = [
-        target_date,
-        shift_year_month(target_date, -3),
-        shift_year_month(target_date, -6),
-        shift_year_month(target_date, -12),
-    ]
+    required_months = [shift_year_month(target_date, offset) for offset in range(-36, 1)]
 
     # 전국 공통 원본은 한 번씩만 조회하고 모든 지역 계산에 같은 목록을 재사용한다.
     regions = get_regions(db)
     vehicle_rows = get_national_vehicle_metrics(db, required_months)
+    commercial_rows = get_national_commercial_freight_counts(db, required_months)
     population_rows = get_national_population(db, target_date)
+    previous_population_rows = get_national_population(
+        db, shift_year_month(target_date, -12)
+    )
+    population_history_rows = get_national_population_history(
+        db, required_months[0], target_date
+    )
+    area_rows = get_region_areas(db)
+    supplemental_metrics = calculate_supplemental_metrics(
+        target_date, vehicle_rows, commercial_rows, population_rows,
+        previous_population_rows, population_history_rows, area_rows,
+    )
 
     scored_regions: list[dict[str, Any]] = []
     for region in regions:
@@ -361,6 +376,7 @@ def get_logistics_ranking(
             industry_weight=industry_weight,
             growth_weight=growth_weight,
             demand_weight=demand_weight,
+            supplemental_metrics=supplemental_metrics,
         )
         if not result["score_available"]:
             continue
@@ -372,6 +388,9 @@ def get_logistics_ranking(
                 "scores": result["scores"],
                 "raw": result["raw"],
                 "normalized": result["normalized"],
+                "metrics": result["metrics"],
+                "axis_completeness": result["axis_completeness"],
+                "unavailable_metrics": result["unavailable_metrics"],
                 "weights": result["weights"],
                 "normalized_weights": result["normalized_weights"],
             }
