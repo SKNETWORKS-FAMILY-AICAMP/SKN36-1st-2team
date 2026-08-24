@@ -97,7 +97,7 @@ def _render_inquiry() -> None:
     key = lambda name: f"inquiry_{name}_{generation}"
 
     with form_col:
-        with st.form(f"inquiry_form_{generation}"):
+        with st.form(f"inquiry_form_{generation}", enter_to_submit=False):
             company_col, manager_col = st.columns(2, gap="medium")
             company_name = company_col.text_input(
                 "회사명 :red[필수]", max_chars=100, key=key("company"),
@@ -120,7 +120,7 @@ def _render_inquiry() -> None:
                 placeholder="010-0000-0000",
                 help="숫자, 공백, 하이픈(-), 괄호, 국가번호(+)를 사용할 수 있습니다.",
             )
-            inquiry_type = st.selectbox("문의 유형 :red[필수]", ("선택해 주세요", *INQUIRY_TYPES), key=key("type"))
+            inquiry_type = st.selectbox("문의 유형 :red[필수]", ("선택", *INQUIRY_TYPES), key=key("type"))
             inquiry_content = st.text_area("문의 내용 :red[필수]", max_chars=1000, height=130, key=key("content"))
             privacy_agreed = st.checkbox("개인정보 수집 및 이용에 동의합니다 (필수)", key=key("privacy"))
             cancel_col, submit_col = st.columns(2, gap="small")
@@ -131,7 +131,7 @@ def _render_inquiry() -> None:
             _advance_form_generation()
             st.rerun()
         if submitted:
-            selected_type = "" if inquiry_type == "선택해 주세요" else inquiry_type
+            selected_type = "" if inquiry_type == "선택" else inquiry_type
             try:
                 result = create_inquiry(
                     db=get_db(), company_name=company_name, manager_name=manager_name,
