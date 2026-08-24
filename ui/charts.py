@@ -156,7 +156,8 @@ def radar_chart(scores: dict[str, float], avg: dict[str, float] | None = None,
         ),
     )
     _base(fig, height=height, legend=avg is not None)
-    st.plotly_chart(fig, use_container_width=True, key=key)
+    st.plotly_chart(fig, use_container_width=True, key=key,
+                config={"displayModeBar": False})
 
 
 # ── 차량 구성비 ─────────────────────────────────────
@@ -210,7 +211,8 @@ def composition_bar(shares: dict[str, float], avg: dict[str, float] | None = Non
     # _base 가 범례를 위로 올리므로 그 뒤에 아래로 내린다
     fig.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.15,
                                   xanchor="center", x=0.5))
-    st.plotly_chart(fig, use_container_width=True, key=key)
+    st.plotly_chart(fig, use_container_width=True, key=key,
+                config={"displayModeBar": False})
 
 
 # ── 연도별 증감 ─────────────────────────────────────
@@ -261,7 +263,7 @@ def yoy_chart(df: pd.DataFrame, year_col: str = "연도",
     fig.update_yaxes(gridcolor=GRID, zeroline=False, tickfont=dict(size=10),
                      rangemode="tozero", range=[0, float(vals.max()) * 1.18])
     _base(fig, height=height)
-    st.plotly_chart(fig, use_container_width=True, key=key)
+    st.plotly_chart(fig, use_container_width=True, key=key, config={"displayModeBar": False})
 
 
 # ── 4분면 산점도 ────────────────────────────────────
@@ -360,7 +362,7 @@ def quadrant_chart(df: pd.DataFrame, selected=None,
     fig.update_yaxes(title_text="화물차 증가율 (%)", gridcolor=GRID,
                      zeroline=False, title_font=dict(size=11, color=MUTE))
     _base(fig, height=height)
-    st.plotly_chart(fig, use_container_width=True, key=key)
+    st.plotly_chart(fig, use_container_width=True, key=key, config={"displayModeBar": False})
 
 
 # ── 추이 ────────────────────────────────────────────
@@ -417,7 +419,7 @@ def trend_chart(df: pd.DataFrame, x_col: str = "연월",
                      nticks=8)
     fig.update_yaxes(gridcolor=GRID, zeroline=False, tickfont=dict(size=10))
     _base(fig, height=height, legend=len(cols) > 1)
-    st.plotly_chart(fig, use_container_width=True, key=key)
+    st.plotly_chart(fig, use_container_width=True, key=key, config={"displayModeBar": False})
 
 
 # ── 분포 히스토그램 ─────────────────────────────────
@@ -470,7 +472,7 @@ def dist_hist(data: pd.DataFrame, col: str = "화물차비율",
                      title_font=dict(size=11, color=MUTE))
     fig.update_yaxes(gridcolor=GRID, zeroline=False, tickfont=dict(size=10))
     _base(fig, height=height)
-    st.plotly_chart(fig, use_container_width=True, key=key)
+    st.plotly_chart(fig, use_container_width=True, key=key, config={"displayModeBar": False})
 
 
 # ── 유형별 지역 수 ──────────────────────────────────
@@ -514,7 +516,7 @@ def type_bar(counts: dict[str, int], selected: str | None = None,
                      range=[0, max(values) * 1.28])
     fig.update_yaxes(gridcolor="rgba(0,0,0,0)", tickfont=dict(size=12))
     _base(fig, height=height)
-    st.plotly_chart(fig, use_container_width=True, key=key)
+    st.plotly_chart(fig, use_container_width=True, key=key, config={"displayModeBar": False})
 
 
 # ── 상위 N 순위 막대 ────────────────────────────────
@@ -559,7 +561,7 @@ def rank_bar(data: pd.DataFrame, value_col: str = "맞춤점수",
                      range=[0, max(vals) * 1.18])
     fig.update_yaxes(gridcolor="rgba(0,0,0,0)", tickfont=dict(size=11))
     _base(fig, height=height)
-    st.plotly_chart(fig, use_container_width=True, key=key)
+    st.plotly_chart(fig, use_container_width=True, key=key, config={"displayModeBar": False})
 
 
 # ── 세 축 그룹 막대 ─────────────────────────────────
@@ -616,4 +618,4 @@ def group_bar(data: pd.DataFrame, name_col: str = "지역",
     _base(fig, height=height, legend=True)
     fig.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.08,
                                   xanchor="center", x=0.5))
-    st.plotly_chart(fig, use_container_width=True, key=key)
+    st.plotly_chart(fig, use_container_width=True, key=key, config={"displayModeBar": False})

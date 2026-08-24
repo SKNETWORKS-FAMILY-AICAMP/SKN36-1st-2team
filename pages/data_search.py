@@ -271,11 +271,13 @@ def build_map(sido_name):
         else:
             agg = df.groupby("시도", as_index=False).agg(값=(metric_col, metric_how)); name2val = dict(zip(agg["시도"], agg["값"]))
         def lookup(name): return name2val.get(name, next((v for k, v in name2val.items() if is_matching_sido(name, k)), None))
-        layer = load_geo_sido().copy(); layer["값"] = layer["sidonm"].map(lookup); vals = layer["값"].dropna()
+        layer = load_geo_sido().copy(); layer["값"] = layer["sidonm"].map(lookup); layer["값"] = layer["값"].round(2)
+        vals = layer["값"].dropna()
         vmin, vmax = (vals.min(), vals.max()) if len(vals) else (0, 1)
         folium.GeoJson(layer, style_function=lambda f: {"fillColor": _shade(f["properties"]["값"],vmin,vmax),"color":"#FFFFFF","weight":1.2,"fillOpacity":.9}, highlight_function=lambda f:{"weight":2.5,"color":"#14293D","fillOpacity":1}, tooltip=folium.GeoJsonTooltip(fields=["sidonm","값"],aliases=["",f"{metric_label} "],sticky=True,style=TOOLTIP_STYLE)).add_to(m); return m
     geo = load_geo_sgg(); layer = geo[geo["sidonm"].apply(lambda n:is_matching_sido(n,sido_name))][["sidonm","sggnm","geometry"]].copy()
-    layer["표시명"] = layer["sggnm"].apply(lambda n:sgg_display_name(sido_name,n)); name2val=dict(zip(scoped["시군구"],scoped[metric_col])); vals=[v for v in name2val.values() if pd.notna(v)]; vmin,vmax=(min(vals),max(vals)) if vals else (0,1); layer["값"]=layer["표시명"].map(name2val)
+    layer["표시명"] = layer["sggnm"].apply(lambda n:sgg_display_name(sido_name,n)); name2val=dict(zip(scoped["시군구"],scoped[metric_col])); vals=[v for v in name2val.values() if pd.notna(v)]; vmin,vmax=(min(vals),max(vals)) if vals else (0,1); layer["값"]=layer["표시명"].map(name2val) 
+    layer["값"]=layer["값"].round(2)
     def style(f):
         p=f["properties"]
         return {"fillColor":HIGHLIGHT,"color":"#14293D","weight":2.5,"fillOpacity":.85} if p["표시명"]==sgg else {"fillColor":_shade(p.get("값"),vmin,vmax),"color":"#FFFFFF","weight":1,"fillOpacity":.9}

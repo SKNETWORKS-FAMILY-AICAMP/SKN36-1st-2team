@@ -251,7 +251,7 @@ FLOW = f"""
 
       <div class="wl-step">
         <div class="wl-step-no">STEP 02</div>
-        <div class="wl-step-h">진단 4문항</div>
+        <div class="wl-step-h">진단 5문항</div>
         <div class="wl-step-d">
           어떤 화물을 다루는지 답하면
           세 축의 가중치가 회사에 맞게 조정됩니다.
