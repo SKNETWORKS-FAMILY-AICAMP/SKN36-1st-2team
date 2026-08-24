@@ -34,7 +34,7 @@ from web.backend import (
     get_supplemental_logistics_metrics,
 )
 
-setup(page="recommend", active="유망지역 추천")
+setup(page="recommend", active="맞춤지역 추천")
 
 TARGET_MONTH, TREND_START, TREND_END = "2026-07", "2023-07", "2026-07"
 TOP_N = 8
@@ -606,7 +606,7 @@ def render_result() -> None:
 html(f"""
 <div class="wl-r-tabs">
   <span class="{'on' if not ss.rec_done else ''}">① 중요도 진단</span>
-  <span class="{'on' if ss.rec_done else ''}">② 유망지역 순위</span>
+  <span class="{'on' if ss.rec_done else ''}">② 맞춤지역 순위</span>
 </div>
 """)
 
