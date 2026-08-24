@@ -472,8 +472,22 @@ def create_inquiry(
             }
         cleaned[key] = normalized
 
-    # 최소한 아이디@도메인.확장자 형태인지 확인한다.
-    if re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", cleaned["email"]) is None:
+    if re.fullmatch(r"[가-힣A-Za-z0-9][가-힣A-Za-z0-9\s&().,·㈜_\-/]*", cleaned["company_name"]) is None:
+        return {
+            "success": False,
+            "message": "회사명에는 한글, 영문, 숫자와 일반적인 회사명 기호만 사용할 수 있습니다.",
+        }
+
+    if re.fullmatch(r"[가-힣A-Za-z]+(?:[\s'-][가-힣A-Za-z]+)*", cleaned["manager_name"]) is None:
+        return {
+            "success": False,
+            "message": "담당자명에는 한글, 영문, 공백, 하이픈(-), 작은따옴표(')만 사용할 수 있습니다.",
+        }
+
+    if re.fullmatch(
+        r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+",
+        cleaned["email"],
+    ) is None:
         return {"success": False, "message": "올바른 이메일 형식을 입력해주세요."}
 
     normalized_contact: str | None = None
@@ -483,6 +497,18 @@ def create_inquiry(
         normalized_contact = contact.strip() or None
         if normalized_contact is not None and len(normalized_contact) > 30:
             return {"success": False, "message": "연락처는 30자 이하로 입력해주세요."}
+        if normalized_contact is not None:
+            if re.fullmatch(r"\+?[0-9()\s-]+", normalized_contact) is None:
+                return {
+                    "success": False,
+                    "message": "연락처에는 숫자, 공백, 하이픈(-), 괄호, 국가번호(+)만 사용할 수 있습니다.",
+                }
+            digit_count = len(re.sub(r"\D", "", normalized_contact))
+            if not 8 <= digit_count <= 15:
+                return {
+                    "success": False,
+                    "message": "연락처는 숫자 기준 8~15자리로 입력해주세요.",
+                }
 
     # 개인정보 동의가 정확히 True가 아니면 INSERT 함수를 호출하지 않는다.
     if privacy_agreed is not True:
