@@ -1,87 +1,88 @@
-/* FAQ · 문의 전용 — 다른 페이지에는 로드되지 않는다. */
-.stApp { background: #f3f6f9; }
-.stMainBlockContainer { max-width: 1180px; padding: clamp(72px, 10vh, 116px) 42px 96px; }
+/* FAQ · 문의 페이지 전용 */
+.stApp { background: #fff; }
+.stMainBlockContainer { max-width: 1240px; padding: 26px 42px 72px; }
 
-.wl-support-hero { max-width: 920px; margin: 0 auto; text-align: center; }
-.wl-support-eyebrow {
-  margin-bottom: 20px; color: #2c6fb5; font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px; font-weight: 600; letter-spacing: .2em;
+/* 상단 탭 */
+.st-key-support_tabs { margin-bottom: 34px; border-bottom: 1px solid #cddce8; }
+.st-key-support_tabs [data-testid="stHorizontalBlock"] { gap: 0 !important; }
+.st-key-support_tabs button {
+  min-height: 38px; padding: 0 4px; border: 0; border-radius: 0; background: transparent;
+  color: #49677f; font-size: 12px; font-weight: 500; box-shadow: none;
 }
-.wl-support-hero h1, .wl-inner-head h1 {
-  margin: 0; color: #14293d; font-size: clamp(34px, 4vw, 54px); font-weight: 700;
-  letter-spacing: -.045em; line-height: 1.22; word-break: keep-all;
-}
-.wl-support-hero p, .wl-inner-head p {
-  max-width: 720px; margin: 24px auto 0; color: #66788a;
-  font-size: clamp(14px, 1.25vw, 16px); line-height: 1.85; word-break: keep-all;
+.st-key-support_tabs button:hover { border: 0; background: transparent; color: #1f6ea2; }
+.st-key-support_tabs button[kind="primary"] {
+  border: 0; border-bottom: 2px solid #287caf; background: transparent; color: #12679c;
 }
 
-.st-key-support_actions { margin: 40px auto 64px; }
-.st-key-support_actions button {
-  min-height: 48px; border: 1px solid #2c6fb5; border-radius: 7px; background: #fff;
-  color: #2c6fb5; font-weight: 650; box-shadow: none;
-}
-.st-key-support_actions button:hover { border-color: #1b62c4; background: #f8fbff; color: #1b62c4; }
-.st-key-support_actions button[kind="primary"] { background: #1b62c4; color: #fff; }
-.st-key-support_actions button[kind="primary"]:hover { background: #1557b0; }
+.wl-page-head { margin-bottom: 20px; text-align: left; }
+.wl-page-head h1 { margin: 0 0 7px; color: #07598b; font-size: 25px; font-weight: 650; letter-spacing: -.03em; }
+.wl-page-head p { margin: 0; color: #55758d; font-size: 12.5px; }
 
-.wl-faq-preview {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 1080px;
-  margin: 0 auto; overflow: hidden; border: 1px solid #dce5ed; border-radius: 9px;
-  background: #dce5ed; gap: 1px;
-}
-.wl-faq-preview article { min-height: 174px; padding: 30px 30px 28px; background: rgba(255,255,255,.96); }
-.wl-faq-preview h2 {
-  min-height: 44px; margin: 0 0 14px; color: #1e3951; font-size: 16px;
-  font-weight: 650; line-height: 1.45; letter-spacing: -.025em; word-break: keep-all;
-}
-.wl-faq-preview p { margin: 0; color: #748392; font-size: 13px; line-height: 1.72; word-break: keep-all; }
-
-.wl-inner-head { max-width: 820px; margin: 0 auto 30px; text-align: center; }
-.wl-inner-head h1 { font-size: clamp(30px, 3.5vw, 44px); }
-.wl-inner-head p { margin-top: 16px; }
-.st-key-support_back { max-width: 940px; margin: 0 auto 20px; }
-.st-key-support_back button {
-  padding: 0; border: 0; background: transparent; color: #587086; font-size: 13px; box-shadow: none;
-}
-.st-key-support_back button:hover { border: 0; background: transparent; color: #1b62c4; }
-
-.st-key-faq_list { max-width: 940px; margin: 0 auto 32px; }
+/* FAQ 한 줄 카드 */
 .st-key-faq_list div[data-testid="stExpander"] {
-  margin-bottom: 10px; overflow: hidden; border: 0; border-bottom: 1px solid #dbe3ea;
-  border-radius: 0; background: transparent; box-shadow: none;
+  margin-bottom: 8px; overflow: hidden; border: 1px solid #cbdce8; border-radius: 7px;
+  background: #fff; box-shadow: none;
 }
-.st-key-faq_list div[data-testid="stExpander"] summary {
-  padding: 13px 4px; color: #213c54; font-size: 15px; font-weight: 600;
+.st-key-faq_list div[data-testid="stExpander"] summary { min-height: 54px; padding: 6px 14px; }
+.st-key-faq_list div[data-testid="stExpander"] summary [data-testid="stMarkdownContainer"] { width: 100%; }
+.st-key-faq_list div[data-testid="stExpander"] summary p {
+  width: 100%; margin: 0; color: #172d3d; font-size: 12px; font-weight: 600;
 }
 .st-key-faq_list div[data-testid="stExpanderDetails"] {
-  padding: 0 8px 22px; color: #657789; font-size: 14px; line-height: 1.8;
+  padding: 2px 42px 18px; border-top: 1px solid #edf2f6; color: #526e82; font-size: 12px; line-height: 1.75;
 }
 
-.wl-form-intro { margin: 0 0 16px; }
-.wl-form-intro h2 { margin: 0 0 5px; color: #1e3951; font-size: 20px; letter-spacing: -.03em; }
-.wl-form-intro p { margin: 0; color: #8693a0; font-size: 12.5px; }
-.wl-form-intro span { color: #d84f5f; }
+/* 문의 폼 */
 div[data-testid="stForm"] {
-  padding: 34px 38px 38px; border: 1px solid #dce5ed; border-radius: 10px;
-  background: rgba(255,255,255,.94); box-shadow: 0 12px 35px rgba(34,67,96,.045);
+  padding: 24px 28px 26px; border: 1px solid #c8dae7; border-radius: 7px;
+  background: #fff; box-shadow: none;
 }
-div[data-testid="stForm"] label p { color: #39546c; font-size: 13px; font-weight: 600; }
-div[data-testid="stTextInput"] input, div[data-testid="stSelectbox"] > div > div,
-div[data-testid="stTextArea"] textarea {
-  border-color: #d7e0e8; border-radius: 6px; background: #fbfcfd; box-shadow: none;
+div[data-testid="stForm"] label p { color: #527087; font-size: 11px; font-weight: 400; }
+div[data-testid="stForm"] [data-testid="stTextInput"],
+div[data-testid="stForm"] [data-testid="stSelectbox"],
+div[data-testid="stForm"] [data-testid="stTextArea"] { margin-bottom: 2px; }
+div[data-testid="stTextInput"] input,
+div[data-testid="stTextArea"] textarea { background: #fbfcfd; font-size: 12px; }
+div[data-testid="stTextInput"] [data-baseweb="input"],
+div[data-testid="stSelectbox"] > div > div,
+div[data-testid="stTextArea"] [data-baseweb="textarea"] {
+  border: 1px solid #c8d9e5; border-radius: 5px; background: #fbfcfd; box-shadow: none;
 }
-div[data-testid="stTextInput"] input:focus, div[data-testid="stTextArea"] textarea:focus { border-color: #2c6fb5; }
-div[data-testid="stFormSubmitButton"] button { min-height: 45px; border-radius: 6px; box-shadow: none; }
-div[data-testid="stFormSubmitButton"] button[kind="primary"] { border-color: #1b62c4; background: #1b62c4; }
-div[data-testid="stAlert"] { max-width: 820px; margin: 0 auto 18px; }
+div[data-testid="stForm"] [data-testid="stCheckbox"] p { font-size: 10.5px; }
+div[data-testid="stFormSubmitButton"] button {
+  min-height: 40px; border: 1px solid #237aaa; border-radius: 4px; background: #fff;
+  color: #12679c; font-size: 11px; box-shadow: none;
+}
+div[data-testid="stFormSubmitButton"] button[kind="primary"] { background: #3b89b5; color: #fff; }
+div[data-testid="stFormSubmitButton"] button[kind="primary"]:hover,
+div[data-testid="stFormSubmitButton"] button[kind="primary"]:hover p {
+  color: #fff !important;
+}
+
+/* 문의 우측 안내 */
+.wl-guide-card { min-height: 174px; margin-left: 10px; padding: 24px 26px; border: 1px solid #c7dae7; border-radius: 7px; }
+.wl-guide-card + .wl-guide-card { margin-top: 18px; }
+.wl-guide-card-blue { background: #edf8ff; }
+.wl-guide-card h2 { margin: 0 0 18px; color: #07598b; font-size: 15px; font-weight: 650; }
+.wl-guide-step { display: flex; align-items: flex-start; gap: 12px; }
+.wl-guide-step + .wl-guide-step { margin-top: 14px; }
+.wl-guide-step b {
+  display: grid; flex: 0 0 22px; width: 22px; height: 22px; place-items: center;
+  border-radius: 50%; background: #3689b8; color: #fff; font-size: 10px;
+}
+.wl-guide-step strong { display: block; color: #274b64; font-size: 11px; }
+.wl-guide-step span { display: block; margin-top: 2px; color: #7290a4; font-size: 10px; }
+.wl-guide-faq { background: #fff; }
+.wl-guide-faq h2 { margin-bottom: 5px; }
+.wl-guide-faq p { margin: 0 0 13px; color: #8195a4; font-size: 10px; }
+.wl-guide-faq ul { margin: 0; padding: 0; list-style: none; }
+.wl-guide-faq li { color: #54809c; font-size: 10.5px; line-height: 1.9; }
+.wl-guide-faq li::before { content: "· "; }
+div[data-testid="stAlert"] { margin-bottom: 15px; }
 
 @media (max-width: 800px) {
-  .stMainBlockContainer { padding: 56px 22px 70px; }
-  .wl-support-hero p br { display: none; }
-  .wl-faq-preview { grid-template-columns: 1fr; }
-  .wl-faq-preview article { min-height: auto; padding: 24px; }
-  .wl-faq-preview h2 { min-height: auto; }
-  div[data-testid="stForm"] { padding: 26px 22px 28px; }
+  .stMainBlockContainer { padding: 22px 20px 56px; }
+  .st-key-support_tabs { margin-bottom: 26px; }
+  div[data-testid="stForm"] [data-testid="stHorizontalBlock"] { flex-wrap: wrap; }
+  .wl-guide-card { margin: 14px 0 0; }
 }
-@media (min-width: 801px) { .wl-mobile-break { display: none; } }
