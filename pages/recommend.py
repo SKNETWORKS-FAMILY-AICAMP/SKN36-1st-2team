@@ -19,18 +19,24 @@ session_state 에 남겨두고 이전값 → 새값 구간의 @keyframes 를
 매번 새로 찍어 브라우저가 애니메이션을 재생하게 했다.
 """
 
-from pathlib import Path
-
 import pandas as pd
 import streamlit as st
+from pymysql import MySQLError
 
 from ui import charts
+from ui.backend import get_db
 from ui.layout import setup, html
+from web.backend import (
+    get_dashboard_summary,
+    get_logistics_ranking,
+    get_national_population_history,
+    get_national_vehicle_metrics,
+    get_supplemental_logistics_metrics,
+)
 
 setup(page="recommend", active="유망지역 추천")
 
-ASSETS = Path(__file__).resolve().parent.parent / "assets"
-
+TARGET_MONTH, TREND_START, TREND_END = "2026-07", "2023-07", "2026-07"
 TOP_N = 8
 
 AXES = ["산업성", "성장성", "수요성"]
@@ -42,7 +48,7 @@ AXIS_CLASS = {"산업성": "industry", "성장성": "growth", "수요성": "dema
 AXIS_DESC = {
     "산업성": "입지계수 LQ · 영업용 비중 · 화물차 대수",
     "성장성": "화물차 증가율 · 가속도 · 추세 지속성",
-    "수요성": "배후 인구 · 인구 밀도 · 인구 증가율",
+    "수요성": "인구 성장 지속성 · 인구 밀도 · 인구 증가율",
 }
 
 # 프리셋 — 슬라이더를 직접 만지는 대신 방향을 통째로 바꾼다.
@@ -121,13 +127,86 @@ QUESTIONS = [
 
 
 # ══ 데이터 ═════════════════════════════════════════
-@st.cache_data
-def load_mock():
-    return pd.read_csv(ASSETS / "mock_regions.csv", encoding="utf-8-sig")
+def split_region_name(name: str) -> tuple[str, str]:
+    sido, _, sgg = name.partition(" ")
+    return sido, sgg or sido
 
 
-df = load_mock()
-N = len(df)
+def classify_region(lq, growth, growth_mean) -> str:
+    """실제 LQ와 전국 평균 화물차 증가율로 기존 UI 유형을 정한다."""
+    if pd.isna(lq) or pd.isna(growth) or pd.isna(growth_mean):
+        return "분류 불가"
+    specialized, growing = lq >= 1, growth >= growth_mean
+    return {
+        (False, True): "미개척",
+        (True, True): "성장 중",
+        (True, False): "포화",
+        (False, False): "정체",
+    }[(specialized, growing)]
+
+
+@st.cache_data(ttl=3600)
+def load_region_count() -> int:
+    return get_dashboard_summary(get_db(), TARGET_MONTH)["region_count"]
+
+
+@st.cache_data(ttl=3600)
+def load_supplemental_data() -> dict[str, dict]:
+    return {
+        row["region_code"]: row
+        for row in get_supplemental_logistics_metrics(get_db(), TARGET_MONTH)
+    }
+
+
+@st.cache_data(ttl=3600)
+def load_recommendation_data(
+    industry_weight: float,
+    growth_weight: float,
+    demand_weight: float,
+) -> tuple[pd.DataFrame, int]:
+    """backend가 계산한 사용자 가중 순위와 상세 표시용 실제 값을 합친다."""
+    db = get_db()
+    region_count = load_region_count()
+    ranking = get_logistics_ranking(
+        db,
+        TARGET_MONTH,
+        industry_weight=industry_weight,
+        growth_weight=growth_weight,
+        demand_weight=demand_weight,
+        limit=max(region_count, 1),
+    )
+    supplemental = load_supplemental_data()
+    rows = []
+    for result in ranking:
+        scores = result.get("scores", {})
+        raw = result.get("raw", {})
+        if any(scores.get(key) is None for key in ("industry", "growth", "demand", "total")):
+            continue
+        region_name = result.get("region_name", result["region_code"])
+        sido, sgg = split_region_name(region_name)
+        extra = supplemental.get(result["region_code"], {}).get("raw", {})
+        rows.append({
+            "region_code": result["region_code"],
+            "지역": region_name,
+            "시도": sido,
+            "시군구": sgg,
+            "맞춤점수": scores["total"],
+            "점수_산업성": scores["industry"],
+            "점수_성장성": scores["growth"],
+            "점수_수요성": scores["demand"],
+            "화물차": raw.get("truck_count"),
+            "인구수": raw.get("population"),
+            "화물차_증가율": raw.get("yoy_growth"),
+            "LQ": extra.get("location_quotient"),
+        })
+    data = pd.DataFrame(rows)
+    if not data.empty:
+        growth_mean = data["화물차_증가율"].mean()
+        data["유형"] = data.apply(
+            lambda row: classify_region(row["LQ"], row["화물차_증가율"], growth_mean),
+            axis=1,
+        )
+    return data, region_count
 
 
 # ══ 상태 ═══════════════════════════════════════════
@@ -142,28 +221,35 @@ ss.setdefault("rec_manual", None)    # 프리셋으로 덮어쓴 값
 ss.setdefault("rec_mver", 0)         # 슬라이더를 새로 만들기 위한 값
 ss.setdefault("rec_open", None)      # 목록에서 펼친 지역
 
-@st.cache_data
-def load_trend():
-    """249개 × 37개월 원자료.
- 
-    화물차 대수를 그대로 쓰면 인구 큰 지역이 늘 위에 있어서
-    그 지역 고유의 움직임이 안 보인다. 인구 1천명당으로 바꾸면
-    규모와 무관하게 밀도의 변화만 남는다.
-    전국 평균을 같은 축에 얹어 비교 기준을 만든다.
-    """
-    t = pd.read_csv(ASSETS / "mock_trend.csv", encoding="utf-8-sig")
-    t["인구천명당_화물차"] = t["화물차수"] / t["인구수"] * 1000
- 
-    nat = (t.groupby("연월")["인구천명당_화물차"]
-             .mean().rename("전국평균").reset_index())
-    t = t.merge(nat, on="연월")
- 
-    ym = t["연월"].astype(str)
-    t["연월라벨"] = ym.str[2:4] + "." + ym.str[4:6]
-    return t.sort_values("연월")
- 
- 
-trend = load_trend()
+@st.cache_data(ttl=3600)
+def load_freight_trend(region_code: str) -> pd.DataFrame:
+    """실제 월별 화물차·인구를 결합해 지역값과 전국값을 반환한다."""
+    months = pd.period_range(TREND_START, TREND_END, freq="M").astype(str).tolist()
+    vehicles = pd.DataFrame(get_national_vehicle_metrics(get_db(), months))
+    populations = pd.DataFrame(
+        get_national_population_history(get_db(), TREND_START, TREND_END)
+    )
+    if vehicles.empty or populations.empty:
+        return pd.DataFrame()
+    vehicle_columns = {"region_code", "date", "truck_count"}
+    population_columns = {"region_code", "date", "population"}
+    if not vehicle_columns.issubset(vehicles.columns) or not population_columns.issubset(populations.columns):
+        return pd.DataFrame()
+    merged = vehicles.merge(populations, on=["region_code", "date"], how="inner")
+    merged = merged[merged["population"].notna() & (merged["population"] > 0)].copy()
+    if merged.empty:
+        return pd.DataFrame()
+    merged["인구천명당_화물차"] = merged["truck_count"] / merged["population"] * 1000
+    national = merged.groupby("date", as_index=False).agg(
+        truck_count=("truck_count", "sum"), population=("population", "sum")
+    )
+    national["전국평균"] = national["truck_count"] / national["population"] * 1000
+    selected = merged[merged["region_code"] == region_code][
+        ["date", "인구천명당_화물차"]
+    ]
+    trend = selected.merge(national[["date", "전국평균"]], on="date", how="left")
+    trend["연월라벨"] = trend["date"].str[2:4] + "." + trend["date"].str[5:7]
+    return trend.sort_values("date")
 
 def survey_weights() -> dict[str, float]:
     """답한 문항의 점수를 축별로 더하고 합이 1이 되게 나눈다.
@@ -293,18 +379,6 @@ def render_weights(w: dict[str, float], compact: bool = False) -> None:
     html(f'<style>{styles}</style><div class="{cls}">{head}{bars}</div>')
 
 
-# ══ 점수 ═══════════════════════════════════════════
-def scored(w: dict[str, float]) -> pd.DataFrame:
-    """가중치로 다시 채점한다.
-
-    세 축 점수를 그대로 가중합한다. 표에 적히는 계산식
-    (58.2 × 0.28 = 16.3) 과 결과가 일치해야 근거로 읽히기 때문이다.
-    """
-    d = df.copy()
-    d["맞춤점수"] = sum(d[AXIS_COL[a]] * w[a] for a in AXES)
-    return d.sort_values("맞춤점수", ascending=False).reset_index(drop=True)
-
-
 # ══ ① 중요도 진단 ══════════════════════════════════
 def render_survey() -> None:
     q = QUESTIONS[ss.rec_idx]
@@ -372,7 +446,14 @@ def render_tuner(base: dict[str, float]) -> dict[str, float]:
 
 
 # ══ 목록 한 줄 ═════════════════════════════════════
-def render_row(rank: int, row, w: dict[str, float], is_open: bool) -> None:
+def render_row(
+    rank: int,
+    row,
+    w: dict[str, float],
+    is_open: bool,
+    nationwide: pd.DataFrame,
+    region_count: int,
+) -> None:
     """왼쪽 셀들은 HTML grid 한 덩어리, 오른쪽에 버튼 하나.
 
     셀마다 st.columns 를 쓰면 컨테이너가 생겨 줄 높이가 들쭉날쭉해진다.
@@ -415,18 +496,24 @@ def render_row(rank: int, row, w: dict[str, float], is_open: bool) -> None:
         for a in AXES
     )
 
+    truck_text = f'{row["화물차"]:,.0f}대' if pd.notna(row["화물차"]) else "데이터 없음"
+    population_text = f'{row["인구수"]:,.0f}명' if pd.notna(row["인구수"]) else "데이터 없음"
+    growth_text = f'{row["화물차_증가율"]:+.1f}%' if pd.notna(row["화물차_증가율"]) else "데이터 없음"
     html(f"""
     <div class="wl-d-panel">
       <div class="wl-d-formula">{terms}
         &nbsp;→&nbsp; <b>종합 {row['맞춤점수']:.1f}점</b></div>
       {bars}
-      <div class="wl-d-foot">화물차 {row['화물차']:,.0f}대 &#183;
-        인구 {row['인구수']:,.0f}명 &#183;
-        전년 동월 대비 {row['화물차_증가율']:+.1f}%</div>
+      <div class="wl-d-foot">화물차 {truck_text} &#183;
+        인구 {population_text} &#183;
+        전년 동월 대비 {growth_text}</div>
     </div>
     """)
 
-    tr = trend[trend["지역"] == row["지역"]]
+    try:
+        tr = load_freight_trend(row["region_code"])
+    except (MySQLError, OSError, ValueError, KeyError, TypeError):
+        tr = pd.DataFrame()
     
     d1, d2 = st.columns(2, gap="medium")
 
@@ -442,9 +529,9 @@ def render_row(rank: int, row, w: dict[str, float], is_open: bool) -> None:
     
         with d2:
             with st.container(border=True):
-                html(f'<div class="wl-chart-sub">전국 {N}개 지역 중 위치</div>')
+                html(f'<div class="wl-chart-sub">전국 {region_count}개 지역 중 위치</div>')
                 charts.quadrant_chart(
-                    df, selected=row["지역"], height=210,
+                    nationwide, selected=row["지역"], height=210,
                     key=f"qd_{row['지역']}",
                 )
 
@@ -463,12 +550,25 @@ def render_result() -> None:
     w = render_tuner(base)
     render_weights(w, compact=True)
 
-    ranked = scored(w)
+    backend_weights = {axis: w[axis] * 100 for axis in AXES}
+    try:
+        ranked, region_count = load_recommendation_data(
+            backend_weights["산업성"],
+            backend_weights["성장성"],
+            backend_weights["수요성"],
+        )
+    except (MySQLError, OSError, ValueError) as error:
+        st.error("추천 데이터를 불러오지 못했습니다. .env와 DB 실행 상태를 확인해주세요.")
+        st.caption(str(error))
+        return
+    if ranked.empty:
+        st.warning(f"{TARGET_MONTH}에 추천 점수를 계산할 수 있는 지역 데이터가 없습니다.")
+        return
     top = ranked.head(TOP_N)
     picks = top["지역"].tolist()
 
     # ── 목록 ───────────────────────────────────────
-    html(f'<div class="wl-sec-head"><b>전국 {N}개 지역 중 상위 {TOP_N}곳</b>'
+    html(f'<div class="wl-sec-head"><b>전국 {region_count}개 지역 중 상위 {len(top)}곳</b>'
          f'<em>근거를 누르면 계산 과정이 펼쳐집니다</em></div>')
 
     hl, hr = st.columns([9, 1])
@@ -481,7 +581,9 @@ def render_result() -> None:
         """)
 
     for i, row in top.iterrows():
-        render_row(i + 1, row, w, ss.rec_open == row["지역"])
+        render_row(
+            i + 1, row, w, ss.rec_open == row["지역"], ranked, region_count
+        )
 
     # # ── 8곳 비교 ───────────────────────────────────
     # html('<div class="wl-sec-head"><b>추천 8곳 견주어 보기</b>'
