@@ -9,8 +9,8 @@ from streamlit_folium import st_folium
 from ui import charts
 from ui.backend import get_db
 from ui.layout import setup, html
-from web.backend import (get_logistics_ranking, get_logistics_score,
-    get_national_population_history, get_national_vehicle_metrics,
+from web.backend import (get_freight_per_population_trend,
+    get_logistics_ranking, get_logistics_score,
     get_province_freight_counts, get_region_detail, get_region_trend,
     get_regions, get_regions_by_province, get_supplemental_logistics_metrics)
 
@@ -115,25 +115,16 @@ def load_trend(code): return get_region_trend(get_db(), code, TREND_START, TREND
 
 
 @st.cache_data(ttl=3600)
-def load_freight_trend(code):
-    """기존 전국 월별 query 결과를 선택 지역/전국 비교용 형태로 변환한다."""
-    months = pd.period_range(TREND_START, TREND_END, freq="M").astype(str).tolist()
-    vehicle_rows = get_national_vehicle_metrics(get_db(), months)
-    population_rows = get_national_population_history(get_db(), TREND_START, TREND_END)
-    vehicles = pd.DataFrame(vehicle_rows)
-    populations = pd.DataFrame(population_rows)
-    if vehicles.empty or populations.empty:
-        return pd.DataFrame()
-    merged = vehicles.merge(populations, on=["region_code", "date"], how="inner")
-    merged["인구천명당_화물차"] = merged["truck_count"] / merged["population"] * 1000
-    national = merged.groupby("date", as_index=False).agg(
-        truck_count=("truck_count", "sum"), population=("population", "sum")
+def load_freight_trend(code=None, province=None):
+    rows = get_freight_per_population_trend(
+        get_db(), TREND_START, TREND_END,
+        province_name=province, region_code=code,
     )
-    national["전국평균"] = national["truck_count"] / national["population"] * 1000
-    selected = merged[merged["region_code"] == code][["date", "truck_count", "인구천명당_화물차"]]
-    return selected.merge(national[["date", "전국평균"]], on="date", how="left").rename(
-        columns={"date": "연월", "truck_count": "화물차수"}
-    )
+    return pd.DataFrame(rows).rename(columns={
+        "date": "연월", "truck_count": "화물차수",
+        "truck_per_1000": "인구천명당_화물차",
+        "national_truck_per_1000": "전국평균",
+    })
 
 @st.cache_data
 def load_geo_sido():
@@ -402,35 +393,28 @@ with a2:
         )
 
 b1, b2 = st.columns(2, gap="medium")
-if sel_row is None:
-    with b1:
-        with st.container(border=True):
-            html('<div class="wl-chart-sub">연도별 화물차 증감</div>')
-            ph("연도별 증감", "시군구를 선택하면 실제 월별 데이터로 표시됩니다")
-    with b2:
-        with st.container(border=True):
-            html('<div class="wl-chart-sub">인구 1천명당 화물차 · 37개월</div>')
-            ph("추이 차트", "시군구를 선택하면 실제 월별 데이터로 표시됩니다")
-else:
-    freight_trend = load_freight_trend(sel_row["region_code"])
-    with b1:
-        with st.container(border=True):
-            html('<div class="wl-chart-sub">연도별 화물차 증감</div>')
-            if freight_trend.empty:
-                ph("연도별 증감", "월별 화물차 데이터 없음")
-            else:
-                yearly = freight_trend.copy()
-                yearly["연도"] = yearly["연월"].str[:4]
-                yearly["월"] = yearly["연월"].str[5:7].astype(int)
-                cutoff = int(TARGET_MONTH[-2:])
-                # 등록대수는 흐름량이 아닌 월말 재고이므로 합산하지 않고
-                # 각 연도의 동일 기준월(7월) 스냅샷끼리 비교한다.
-                yearly = yearly[yearly["월"] == cutoff][["연도", "화물차수"]]
-                charts.yoy_chart(yearly, key="yoy")
-    with b2:
-        with st.container(border=True):
-            html('<div class="wl-chart-sub">인구 1천명당 화물차 · 37개월</div>')
-            series = {"인구천명당_화물차": scope_name}
-            if compare:
-                series["전국평균"] = "전국 평균"
-            charts.trend_chart(freight_trend, x_col="연월", series=series, key="trend")
+freight_trend = load_freight_trend(
+    code=sel_row["region_code"] if sel_row is not None else None,
+    province=sido if level == "시도" else None,
+)
+with b1:
+    with st.container(border=True):
+        html('<div class="wl-chart-sub">연도별 화물차 증감</div>')
+        if freight_trend.empty:
+            ph("연도별 증감", "월별 화물차 데이터 없음")
+        else:
+            yearly = freight_trend.copy()
+            yearly["연도"] = yearly["연월"].str[:4]
+            yearly["월"] = yearly["연월"].str[5:7].astype(int)
+            cutoff = int(TARGET_MONTH[-2:])
+            # 등록대수는 흐름량이 아닌 월말 재고이므로 합산하지 않고
+            # 각 연도의 동일 기준월(7월) 스냅샷끼리 비교한다.
+            yearly = yearly[yearly["월"] == cutoff][["연도", "화물차수"]]
+            charts.yoy_chart(yearly, key="yoy")
+with b2:
+    with st.container(border=True):
+        html('<div class="wl-chart-sub">인구 1천명당 화물차 · 37개월</div>')
+        series = {"인구천명당_화물차": scope_name}
+        if compare:
+            series["전국평균"] = "전국 평균"
+        charts.trend_chart(freight_trend, x_col="연월", series=series, key="trend")
