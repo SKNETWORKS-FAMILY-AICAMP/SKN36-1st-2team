@@ -78,6 +78,44 @@ class InquiryServiceTest(unittest.TestCase):
         self.assertFalse(create_inquiry(db=db, **values)["success"])
         self.assertEqual(db.calls, [])
 
+    def test_invalid_company_name_does_not_insert(self) -> None:
+        for company_name in ("<script>alert(1)</script>", "테스트물류@회사"):
+            with self.subTest(company_name=company_name):
+                db = FakeDB()
+                values = self.valid_values()
+                values["company_name"] = company_name
+                self.assertFalse(create_inquiry(db=db, **values)["success"])
+                self.assertEqual(db.calls, [])
+
+    def test_invalid_manager_name_does_not_insert(self) -> None:
+        for manager_name in ("홍길동123", "홍길동<script>"):
+            with self.subTest(manager_name=manager_name):
+                db = FakeDB()
+                values = self.valid_values()
+                values["manager_name"] = manager_name
+                self.assertFalse(create_inquiry(db=db, **values)["success"])
+                self.assertEqual(db.calls, [])
+
+    def test_invalid_contact_does_not_insert(self) -> None:
+        for contact in ("010-12AB-5678", "1234", "+82<script>"):
+            with self.subTest(contact=contact):
+                db = FakeDB()
+                values = self.valid_values()
+                values["contact"] = contact
+                self.assertFalse(create_inquiry(db=db, **values)["success"])
+                self.assertEqual(db.calls, [])
+
+    def test_common_international_values_are_allowed(self) -> None:
+        db = FakeDB()
+        values = self.valid_values()
+        values.update({
+            "company_name": "SK C&C (주)",
+            "manager_name": "Anne-Marie O'Neil",
+            "email": "anne.o'neil+logistics@example.co.kr",
+            "contact": "+82 (10) 1234-5678",
+        })
+        self.assertTrue(create_inquiry(db=db, **values)["success"])
+
     def test_privacy_disagreement_does_not_insert(self) -> None:
         db = FakeDB()
         values = self.valid_values()
