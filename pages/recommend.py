@@ -550,6 +550,11 @@ def render_result() -> None:
                   use_container_width=True)
 
     w = render_tuner(base)
+    if not ss.get("rec_result_shown"):
+        ss.rec_prev_w = None
+        ss.rec_result_shown = True
+
+    
     render_weights(w, compact=True)
 
     backend_weights = {axis: w[axis] * 100 for axis in AXES}
@@ -606,7 +611,7 @@ def render_result() -> None:
 html(f"""
 <div class="wl-r-tabs">
   <span class="{'on' if not ss.rec_done else ''}">① 중요도 진단</span>
-  <span class="{'on' if ss.rec_done else ''}">② 유망지역 순위</span>
+  <span class="{'on' if ss.rec_done else ''}">② 맞춤지역 순위</span>
 </div>
 """)
 
