@@ -195,13 +195,26 @@ def transform_vehicle_to_long(vehicle: pd.DataFrame, categories: pd.DataFrame) -
 
 def connect():
     import pymysql
+    import time
     from dotenv import load_dotenv
     load_dotenv(ROOT / ".env")
-    return pymysql.connect(
-        host=os.getenv("DB_HOST", "localhost"), port=int(os.getenv("DB_PORT", "3307")),
-        user=os.getenv("DB_USER", "root"), password=os.getenv("DB_PASSWORD", ""),
-        database=os.getenv("DB_NAME", "logistics_db"), charset="utf8mb4", autocommit=False,
-    )
+    connection_options = {
+        "host": os.getenv("DB_HOST", "localhost"),
+        "port": int(os.getenv("DB_PORT", "3307")),
+        "user": os.getenv("DB_USER", "root"),
+        "password": os.getenv("DB_PASSWORD", "root1234"),
+        "database": os.getenv("DB_NAME", "logistics_db"),
+        "charset": "utf8mb4",
+        "autocommit": False,
+    }
+    for attempt in range(30):
+        try:
+            return pymysql.connect(**connection_options)
+        except pymysql.OperationalError as error:
+            retryable = error.args and error.args[0] in {2002, 2003, 2006, 2013}
+            if not retryable or attempt == 29:
+                raise
+            time.sleep(2)
 
 
 def batched(rows: Sequence[tuple], size: int = BATCH_SIZE):

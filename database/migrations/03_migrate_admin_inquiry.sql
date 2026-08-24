@@ -1,4 +1,5 @@
 -- 기존 빈 member/inquiry를 새 admin/inquiry 구조로 교체한다.
+-- 신규 DB 초기화용이 아니며, 과거 스키마를 사용하는 기존 DB에서만 수동 실행한다.
 -- 기존 데이터가 하나라도 있으면 SIGNAL로 중단하므로 먼저 백업/이관 방안을 정해야 한다.
 USE logistics_db;
 
