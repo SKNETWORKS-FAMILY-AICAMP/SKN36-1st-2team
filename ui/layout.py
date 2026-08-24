@@ -12,7 +12,7 @@ IMG_DIR = ROOT / "assets" / "img"
 NAV_LINKS = [
     ("서비스 소개",   "/"),
     ("데이터 조회",   "/data_search"),
-    ("유망지역 추천", "/recommend"),
+    ("맞춤지역 추천", "/recommend"),
     ("FAQ · 문의",   "/inquiry"),
 ]
 
@@ -44,7 +44,7 @@ def setup(page: str = "", active: str = "",
     """
     st.set_page_config(
         page_title=f"{title} | 물류 거점 예측 분석",
-        page_icon="▤",
+        page_icon=str(IMG_DIR / "waylogi-logo.png"),
         layout="wide",
         initial_sidebar_state="collapsed",
     )
@@ -70,14 +70,12 @@ def setup(page: str = "", active: str = "",
         for label, href in NAV_LINKS
     )
 
+    logo_b64 = base64.b64encode((IMG_DIR / "waylogi.png").read_bytes()).decode()
     mark = (
         '<a class="wl-mark" href="/" target="_self">'
-        '<svg viewBox="0 0 40 34" width="30" height="26" aria-hidden="true">'
-        '<path d="M3 4 L11 27 L20 11 L29 27 L37 4" fill="none" '
-        'stroke="#2C6FB5" stroke-width="3.4" stroke-linecap="round" '
-        'stroke-linejoin="round"/>'
-        '<circle cx="20" cy="6" r="2.6" fill="#8FB8DC"/>'
-        '</svg><span>웨이로지</span></a>'
+        f'<img src="data:image/png;base64,{logo_b64}" class="wl-logo-img" '
+        'alt="웨이로지"/>'
+        '</a>'
     )
     pad = '<div class="wl-navpad"></div>' if navpad else ''
     st.markdown(

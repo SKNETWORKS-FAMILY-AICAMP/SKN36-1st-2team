@@ -39,19 +39,32 @@ region_count = display_number(dashboard["region_count"])
 
 HERO = f"""
 <section class="wl-hero">
+<div class="routes" aria-hidden="true">
+<svg viewBox="0 0 1400 800" preserveAspectRatio="none">
+  <path class="dash" d="M0,600 Q350,300 700,500 T1400,350"
+        stroke="rgba(255,255,255,.30)" stroke-width="1.6" fill="none"/>
+  <path class="dash" d="M100,750 Q500,450 900,600 T1400,200"
+        stroke="rgba(127,178,240,.22)" stroke-width="1.4" fill="none"/>
+  <circle class="node" cx="700" cy="500" r="5" fill="#fff"/>
+  <circle class="node" cx="1100" cy="380" r="5" fill="#7FB2F0"/>
+  <circle class="node" cx="900" cy="600" r="4" fill="#fff" opacity=".8"/>
+</svg>
+</div>
 <div class="wl-hero-inner">
 
 <h1 class="wl-h1">
-데이터로 찾는<br>우리 회사의 다음 물류 거점
+거점을 정하는 데<br>
+필요한 건 감이 아니라 데이터
 </h1>
 
 <p class="wl-sub">
-전국 {region_count}개 시군구의 화물차&#183;인구 데이터를 분석해,
-기업이 어디에 거점을 두면 좋을지 알려드립니다.
+웨이로지는 전국 {region_count}개 시군구의 화물차 등록 데이터를 분석하는 물류 입지 분석 서비스입니다.<br>
+국토교통부 자동차등록현황과 주민등록 인구통계를 결합하여 산업성·성장성·수요성 기반의 물류 거점 적합도 지수를 산출합니다.<br>
+상권 분석 중심의 기존 서비스와 달리 화물 이동에 초점을 맞추어 기업의 거점 선정 의사결정을 지원합니다.
 </p>
 
 <div class="wl-cta-row">
-<a class="wl-btn wl-btn-primary" href="/recommend" target="_self">유망지역 추천 받기</a>
+<a class="wl-btn wl-btn-primary" href="/recommend" target="_self">맞춤지역 추천 받기</a>
 <a class="wl-btn wl-btn-ghost"   href="/data_search" target="_self">데이터 먼저 보기</a>
 </div>
 
