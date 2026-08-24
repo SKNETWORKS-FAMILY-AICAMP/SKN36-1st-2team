@@ -192,6 +192,7 @@ with c3:
 with c4:
     # 원본의 slider 위치를 유지하고 실제 DB 자체 인구로 필터링한다.
     lo, hi = int(df["인구수"].min()), int(df["인구수"].max())
+    html('<div class="wl-pop-filter-label">인구 배후</div>')
     pop = st.slider(
         "인구", lo, hi, (lo, hi), step=10_000, label_visibility="collapsed"
     )
