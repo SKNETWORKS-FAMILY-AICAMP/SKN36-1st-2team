@@ -230,11 +230,11 @@ def calculate_supplemental_metrics(
             if truck_current is not None and truck_previous is not None
             else None
         )
-        # 감소·정체 구간은 '영업용으로 전환된 비율'의 의미가 성립하지 않는다.
-        # 0/음수 분모를 0점으로 왜곡하지 않고 결측으로 제외한다.
+        # 증가분이 정확히 0인 경우에만 비율을 정의할 수 없다. 감소분은
+        # 수학적으로 유효하므로 음수라는 이유로 제외하지 않는다.
         conversion = (
             calculate_ratio(commercial_delta, truck_delta)
-            if truck_delta is not None and truck_delta > 0
+            if truck_delta is not None and truck_delta != 0
             else None
         )
         freight_yoy = calculate_growth(truck_current, truck_previous)
@@ -429,15 +429,14 @@ def calculate_logistics_score(
     metric_keys = {
         "industry": [
             "commercial_truck_share", "location_quotient",
-            "truck_ratio", "freight_per_1000",
+            "freight_per_1000",
         ],
         "growth": [
             "decoupling", "acceleration", "trend_persistence",
             "commercial_conversion_rate", "freight_yoy_growth", "stability",
         ],
         "demand": [
-            "adjacent_population", "population", "population_density",
-            "population_yoy_growth",
+            "population", "population_density", "population_yoy_growth",
         ],
     }
 

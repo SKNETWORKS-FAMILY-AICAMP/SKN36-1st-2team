@@ -171,13 +171,16 @@ class LogisticsScoreFormulaTest(unittest.TestCase):
         self.assertEqual(self.result["normalized"]["population_score"], 0.0)
 
     def test_component_score_formulas(self) -> None:
-        # 산업성 = (0+50+50+100)/4 = 50
+        # 산업성 = (영업용 0+LQ 50+인구천명당 100)/3 = 50
         # 성장성 = (100+0+50+25+100+50)/6
-        # 수요성 = 인접권 결측을 명시하고 가용 3개 (0+100+50)/3
+        # 수요성 = (자체인구 0+인구밀도 100+인구YoY 50)/3
         self.assertEqual(self.result["scores"]["industry"], 50.0)
         self.assertAlmostEqual(self.result["scores"]["growth"], 54.1667, places=4)
         self.assertEqual(self.result["scores"]["demand"], 50.0)
-        self.assertEqual(self.result["axis_completeness"]["demand"], {"available": 3, "required": 4})
+        self.assertEqual(self.result["axis_completeness"]["industry"], {"available": 3, "required": 3})
+        self.assertEqual(self.result["axis_completeness"]["demand"], {"available": 3, "required": 3})
+        self.assertNotIn("truck_ratio", self.result["metrics"]["industry"])
+        self.assertNotIn("adjacent_population", self.result["metrics"]["demand"])
 
     def test_default_weight_total(self) -> None:
         self.assertEqual(
@@ -186,7 +189,8 @@ class LogisticsScoreFormulaTest(unittest.TestCase):
         )
         self.assertAlmostEqual(self.result["scores"]["total"], 51.3889, places=4)
         self.assertTrue(self.result["score_available"])
-        self.assertIn("demand.adjacent_population", self.result["unavailable_reason"])
+        self.assertIsNone(self.result["unavailable_reason"])
+        self.assertNotIn("demand.adjacent_population", self.result["unavailable_metrics"])
 
     def test_custom_weight_total(self) -> None:
         result = calculate_logistics_score(
