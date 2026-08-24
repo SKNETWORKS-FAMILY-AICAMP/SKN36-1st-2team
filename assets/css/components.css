@@ -8,6 +8,20 @@ div[data-testid="stSlider"] {
   padding-top: 6px;
 }
 
+.wl-pop-filter-label {
+  position: relative;
+  z-index: 1;
+  top: 1px;
+  height: 0;
+  text-align: center;
+  color: #6F7D8C;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -.01em;
+  pointer-events: none;
+}
+
 div[data-testid="stSelectbox"],
 div[data-testid="stMultiSelect"] {
   transform: translateY(10px);

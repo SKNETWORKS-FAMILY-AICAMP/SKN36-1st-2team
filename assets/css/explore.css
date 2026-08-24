@@ -21,7 +21,7 @@
 .block-container,
 [data-testid="stMainBlockContainer"],
 [data-testid="stAppViewBlockContainer"] {
-  padding: calc(var(--nav-h) + 22px) clamp(16px, 2.4vw, 36px) 48px !important;
+  padding: calc(var(--nav-h) - 22px) clamp(16px, 2.4vw, 36px) 48px !important;
   max-width: 1600px !important;
   margin: 0 auto !important;
 }
