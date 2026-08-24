@@ -158,7 +158,7 @@ class StreamlitSupplementalDisplayTest(unittest.TestCase):
         app.run(timeout=120)
         self.assertEqual(len(app.exception), 0)
         markdown = "\n".join(str(element.value) for element in app.markdown)
-        self.assertIn("인구 성장 지속성", markdown)
+        self.assertIn("인접권 인구", markdown)
         self.assertIn("인구 밀도", markdown)
 
 

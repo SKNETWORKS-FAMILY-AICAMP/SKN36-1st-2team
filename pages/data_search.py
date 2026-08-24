@@ -22,19 +22,21 @@ METRICS = {
     "화물차": ("화물차", "sum", "{:,.0f}대")}
 EVIDENCE_FIELDS = {
     "산업성": [
-        ("입지계수 LQ", "LQ", "{:.2f}"),
         ("영업용 비중", "영업용비중", "{:.1f}%"),
+        ("입지계수 LQ", "LQ", "{:.2f}"),
         ("화물차 비율", "화물차비율", "{:.1f}%"),
-        ("화물차 대수", "화물차", "{:,.0f}대"),
+        ("인구 1천명당 화물차", "인구1천명당화물차", "{:,.1f}대"),
     ],
     "성장성": [
-        ("화물차 증가율", "화물차_증가율", "{:+.1f}%"),
-        ("가속도", "가속도", "{:+.1f}%p"),
+        ("인구-화물 디커플링", "디커플링", "{:+.1f}%p"),
+        ("12개월 가속도", "가속도", "{:+.1f}%p"),
         ("추세 지속성", "추세지속성", "{:.2f}"),
         ("영업용 전환율", "영업용전환율", "{:.2f}"),
+        ("화물차 전년동월비", "화물차_증가율", "{:+.1f}%"),
+        ("안정성", "안정성", "{:.3f}"),
     ],
     "수요성": [
-        ("인구 성장 지속성", "인구_성장지속성", "{:.1f}%"),
+        ("인접권 인구", "인접권인구", "{:,.0f}명"),
         ("자체 인구", "인구수", "{:,.0f}명"),
         ("인구 밀도", "인구밀도", "{:,.1f}명/km²"),
         ("인구 증가율", "인구_증가율", "{:+.1f}%"),
@@ -73,29 +75,35 @@ def load_region_data():
             "화물차비율": raw["truck_ratio"], "화물차_증가율": raw["yoy_growth"],
             "가속도": raw["acceleration"], "인구수": raw["population"],
             "인구1만명당화물차": raw["truck_per_10000"],
+            "인구1천명당화물차": raw.get("truck_per_1000"),
             "LQ": extra.get("location_quotient"),
             "영업용비중": extra.get("commercial_truck_share"),
             "추세지속성": extra.get("trend_persistence"),
             "영업용전환율": extra.get("commercial_conversion_rate"),
+            "디커플링": extra.get("decoupling"),
+            "안정성": extra.get("stability"),
+            "인접권인구": extra.get("adjacent_population"),
             "인구_증가율": extra.get("population_yoy_growth"),
             "인구_성장지속성": extra.get("population_trend_persistence"),
             "면적_km2": extra.get("area_km2"),
-            "인구밀도": extra.get("population_density")})
+            "인구밀도": extra.get("population_density"),
+            "화물차밀도": extra.get("freight_density")})
     data = pd.DataFrame(rows)
     if not data.empty:
         growth_mean = data["화물차_증가율"].mean()
+        density_mean = data["화물차밀도"].mean()
         data["유형"] = data.apply(
-            lambda row: classify_region(row["LQ"], row["화물차_증가율"], growth_mean),
+            lambda row: classify_region(row["화물차밀도"], row["화물차_증가율"], density_mean, growth_mean),
             axis=1,
         )
     return data, get_province_freight_counts(get_db(), TARGET_MONTH)
 
 
-def classify_region(lq, growth, growth_mean):
-    """실제 LQ와 전국 평균 화물차 증가율로 UI의 4분면 유형을 계산한다."""
-    if pd.isna(lq) or pd.isna(growth) or pd.isna(growth_mean):
+def classify_region(density, growth, density_mean, growth_mean):
+    """PDF의 화물차 밀도·YoY 4분면으로 경합도 라벨을 계산한다."""
+    if any(pd.isna(value) for value in (density, growth, density_mean, growth_mean)):
         return "분류 불가"
-    specialized, growing = lq >= 1, growth >= growth_mean
+    specialized, growing = density >= density_mean, growth >= growth_mean
     return {
         (False, True): "미개척",
         (True, True): "성장 중",
