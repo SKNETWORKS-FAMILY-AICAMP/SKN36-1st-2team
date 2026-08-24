@@ -101,19 +101,23 @@ def _render_inquiry() -> None:
             company_col, manager_col = st.columns(2, gap="medium")
             company_name = company_col.text_input(
                 "회사명 :red[필수]", max_chars=100, key=key("company"),
+                placeholder="웨이로지",
                 help="한글, 영문, 숫자와 일반적인 회사명 기호만 입력할 수 있습니다.",
             )
             manager_name = manager_col.text_input(
                 "담당자명 :red[필수]", max_chars=50, key=key("manager"),
+                placeholder="김웨이",
                 help="한글, 영문, 공백, 하이픈(-), 작은따옴표(')만 입력할 수 있습니다.",
             )
             email_col, contact_col = st.columns(2, gap="medium")
             email = email_col.text_input(
                 "이메일 :red[필수]", max_chars=255, key=key("email"),
+                placeholder="waylogi@gmail.com",
                 help="예: name@example.com",
             )
             contact = contact_col.text_input(
                 "연락처 :gray[선택]", max_chars=30, key=key("contact"),
+                placeholder="010-0000-0000",
                 help="숫자, 공백, 하이픈(-), 괄호, 국가번호(+)를 사용할 수 있습니다.",
             )
             inquiry_type = st.selectbox("문의 유형 :red[필수]", ("선택해 주세요", *INQUIRY_TYPES), key=key("type"))
