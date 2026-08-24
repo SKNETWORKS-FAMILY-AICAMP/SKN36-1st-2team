@@ -1,0 +1,270 @@
+/* ══ 유망지역 추천 ═════════════════════════════════ */
+
+/* ── 단계 탭 ───────────────────────────────────── */
+.wl-r-tabs {
+  display: flex;
+  gap: 28px;
+  border-bottom: 1px solid #E8EDF2;
+  margin-bottom: 24px;
+}
+.wl-r-tabs span {
+  padding: 10px 2px 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #A3AFBB;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.wl-r-tabs span.on {
+  color: #14293D;
+  border-bottom-color: #378ADD;
+}
+
+/* ── 섹션 머리 ─────────────────────────────────── */
+.wl-sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 34px 0 14px;
+  padding-top: 20px;
+  border-top: 1px solid #E8EDF2;
+}
+.wl-sec-head b {
+  font-size: 16px;
+  font-weight: 700;
+  color: #14293D;
+  letter-spacing: -0.3px;
+}
+.wl-sec-head em {
+  font-size: 12.5px;
+  font-style: normal;
+  color: #A3AFBB;
+}
+
+/* ── 진행바 ────────────────────────────────────── */
+.wl-q-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: #E8EDF2;
+  overflow: hidden;
+}
+.wl-q-progress i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: #378ADD;
+}
+.wl-q-count {
+  font-size: 13px;
+  color: #8B97A4;
+  padding-top: 10px;
+}
+
+/* ── 문항 ──────────────────────────────────────── */
+.wl-q-head {
+  text-align: center;
+  margin: 50px 0 32px;
+}
+.wl-q-head h2 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #14293D;
+  letter-spacing: -0.8px;
+  margin: 0 0 10px;
+}
+.wl-q-head p {
+  font-size: 15px;
+  color: #8B97A4;
+  margin: 0;
+}
+
+/* ── 가중치 패널 ───────────────────────────────── */
+.wl-wpanel {
+  margin: 18px 0 6px;
+  padding: 18px 22px 14px;
+  background: #FFFFFF;
+  border: 1px solid #E8EDF2;
+  border-radius: 14px;
+}
+.wl-wpanel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.wl-wpanel-head span {
+  font-size: 15px;
+  font-weight: 700;
+  color: #14293D;
+}
+.wl-wpanel-head em {
+  font-size: 12px;
+  font-style: normal;
+  color: #A3AFBB;
+}
+
+/* 결과 화면 — 세 축을 가로 한 줄로 접는다 */
+.wl-wpanel-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  padding: 14px 22px 10px;
+}
+.wl-wpanel-row .wl-wbar { margin-bottom: 0; }
+
+.wl-wbar {
+  display: grid;
+  grid-template-columns: 52px 1fr 38px 46px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.wl-wbar-label { font-size: 13px; color: #6B7A89; }
+.wl-wbar-track {
+  height: 9px;
+  border-radius: 5px;
+  background: #EDF1F5;
+  overflow: hidden;
+}
+.wl-wbar-track i { display: block; height: 100%; border-radius: 5px; }
+.wl-wbar-track i.industry { background: #185FA5; }
+.wl-wbar-track i.growth   { background: #378ADD; }
+.wl-wbar-track i.demand   { background: #A8CBEE; }
+.wl-wbar-pct {
+  font-size: 13px;
+  font-weight: 700;
+  color: #14293D;
+  text-align: right;
+}
+.wl-wbar em { font-size: 11px; font-style: normal; font-weight: 600; }
+.wl-wbar em.up   { color: #3B9E6B; }
+.wl-wbar em.down { color: #E2574C; }
+
+/* ── 조정 슬라이더 설명 ────────────────────────── */
+.wl-tune-desc {
+  font-size: 11.5px;
+  color: #A3AFBB;
+  line-height: 1.5;
+  margin: -12px 0 4px;
+}
+
+/* ── 결과 머리 ─────────────────────────────────── */
+.wl-r-head h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #14293D;
+  letter-spacing: -0.5px;
+  margin: 0 0 6px;
+}
+.wl-r-head p { font-size: 14px; color: #8B97A4; margin: 0; }
+
+/* ── 목록 ──────────────────────────────────────── */
+/* 칸 너비는 여기서 잡는다. Streamlit 컬럼으로 나누면
+   셀마다 컨테이너가 생겨 줄 높이가 들쭉날쭉해진다. */
+.wl-t-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 92px 78px 78px 78px;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #EEF2F6;
+}
+.wl-t-row.open {
+  background: #F7FAFD;
+  border-radius: 10px 10px 0 0;
+  border-bottom-color: transparent;
+}
+
+.wl-t-head {
+  padding: 0 14px 8px;
+  border-bottom: 1px solid #E8EDF2;
+}
+.wl-t-head span {
+  font-size: 12px;
+  color: #8B97A4;
+}
+
+.wl-t-no {
+  font-size: 14px;
+  font-weight: 700;
+  color: #378ADD;
+}
+.wl-t-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #14293D;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wl-t-score {
+  font-size: 17px;
+  font-weight: 700;
+  color: #14293D;
+  letter-spacing: -0.3px;
+}
+.wl-t-val { font-size: 14px; color: #6B7A89; }
+
+/* ── 펼친 근거 ─────────────────────────────────── */
+.wl-d-panel {
+  background: #F7FAFD;
+  border: 1px solid #E3EBF3;
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  padding: 16px 22px 14px;
+  margin: -8px 0 14px;
+}
+.wl-d-formula {
+  font-size: 13px;
+  color: #4E7EA8;
+  margin-bottom: 14px;
+}
+.wl-d-formula b { color: #14293D; }
+
+.wl-d-bar {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 46px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.wl-d-bar span { font-size: 13px; color: #6B7A89; }
+.wl-d-track {
+  height: 10px;
+  border-radius: 5px;
+  background: #E4EBF2;
+  overflow: hidden;
+}
+.wl-d-track i { display: block; height: 100%; border-radius: 5px; }
+.wl-d-track i.industry { background: #185FA5; }
+.wl-d-track i.growth   { background: #378ADD; }
+.wl-d-track i.demand   { background: #A8CBEE; }
+.wl-d-bar b {
+  font-size: 14px;
+  font-weight: 700;
+  color: #14293D;
+  text-align: right;
+}
+.wl-d-foot {
+  font-size: 12px;
+  color: #8B97A4;
+  margin-top: 12px;
+}
+
+/* ── 유형 뱃지 ─────────────────────────────────── */
+/* components.css 에 이미 있으면 이 블록은 지우세요. */
+.wl-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.wl-tag.t0 { background: #E8F4EE; color: #2F7D55; }
+.wl-tag.t1 { background: #E6F1FB; color: #1E6BB8; }
+.wl-tag.t2 { background: #FDF3DC; color: #A2760A; }
+.wl-tag.t3 { background: #EFF2F5; color: #78868F; }
