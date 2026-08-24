@@ -10,9 +10,9 @@ from web.backend import create_inquiry
 
 INQUIRY_TYPES = ("서비스 이용 문의", "데이터 문의", "지표 해석 문의", "기타 문의")
 INQUIRY_GUIDE_QUESTIONS = (
-    "증가율은 어떻게 계산하나요?",
-    "화물차 등록대수는 어떤 기준으로 집계되나요?",
-    "종합점수가 높으면 반드시 좋은 입지인가요?",
+    "지표 이름이 어려운데, 쉽게 설명해 주실 수 있나요?",
+    "화물차 등록대수에는 어떤 차량이 포함되나요?",
+    "산업성·성장성·수요성은 각각 무엇을 의미하나요?",
 )
 FAQS = (
     {
@@ -23,12 +23,12 @@ FAQS = (
     {
         "category": "지표 해석",
         "question": "산업성·성장성·수요성은 각각 무엇을 의미하나요?",
-        "answer": "**산업성**은 현재 해당 지역의 물류 산업 기반과 특화 정도를 나타내며, 영업용 화물 비중·입지계수(LQ)·인구 1천 명당 화물차를 활용합니다.\n\n**성장성**은 앞으로 물류 수요가 성장할 가능성을 나타내며, 인구-화물 디커플링·12개월 가속도·추세 지속성·영업용 전환율·화물차 전년동월비·안정성을 활용합니다.\n\n**수요성**은 해당 지역의 잠재적인 물류 수요 규모를 나타내며, 자체 인구·인구 밀도·인구 증가율을 활용합니다.",
+        "answer": "**01 산업성**  \n— 반영값: 영업용 화물 비중 · 입지계수(LQ) · 인구 1천 명당 화물차  \n지금 그 지역에서 물류가 얼마나 활발한지를 봅니다.  \n화물차가 얼마나 활발하게 운영되고 있는지, 특히 영업용 화물차의 비중과 지역의 물류 특화 정도를 종합합니다.\n\n**02 성장성**  \n— 반영값: 화물차 전년동월비 · 12개월 가속도 · 추세 지속성 · 영업용 전환율 · 인구-화물 디커플링 · 안정성  \n앞으로 물류가 얼마나 성장할 지역인지를 봅니다.  \n일시적으로 증가한 지역과 꾸준히 성장하는 지역을 구분하기 위해 증가율뿐 아니라 증가 속도의 변화와 추세의 지속성·안정성까지 함께 봅니다.\n\n**03 수요성**  \n— 반영값: 자체 인구 · 인구 밀도 · 인구 증가율  \n해당 지역에 물류 수요가 얼마나 형성될 수 있는지를 봅니다.  \n현재 인구 규모와 밀집 정도, 앞으로 인구가 늘어날 가능성을 함께 반영합니다.",
     },
     {
         "category": "지표 해석",
         "question": "기준을 바꾸면 추천 순위가 달라지는 이유는 무엇인가요?",
-        "answer": "지역마다 산업성·성장성·수요성 점수가 다르기 때문입니다. 사용자가 어떤 기준을 더 중요하게 설정하느냐에 따라 각 점수의 반영 비율이 달라지고, 이에 따라 최종 점수와 추천 순위도 다시 계산됩니다.\n\n예를 들어 성장성을 높게 설정하면 현재 규모가 큰 지역보다 **최근 성장 흐름이 좋은 지역**이 더 높은 순위에 나타날 수 있습니다.",
+        "answer": "지역마다 산업성·성장성·수요성 점수가 다르기 때문입니다. 사용자가 어떤 기준을 더 중요하게 설정하느냐에 따라 **각 점수의 반영 비율**이 달라지고, 이에 따라 최종 점수와 추천 순위도 다시 계산됩니다.\n\n예를 들어 성장성을 높게 설정하면 현재 규모가 큰 지역보다 최근 성장 흐름이 좋은 지역이 더 높은 순위에 나타날 수 있습니다.",
     },
     {
         "category": "지표 해석",
@@ -42,8 +42,26 @@ FAQS = (
     },
     {
         "category": "지표 해석",
-        "question": "지역별 추천 결과가 크게 다른 이유는 무엇인가요?",
-        "answer": "지역마다 화물차 등록 현황, 영업용 화물 비중, 물류 특화도, 인구 규모와 밀도, 최근 성장 추이 등이 서로 다르기 때문입니다. 동일한 기준을 적용해도 각 지역의 데이터 특성이 다르므로 점수와 순위에 차이가 발생합니다.",
+        "question": "지표 이름이 어려운데, 쉽게 설명해 주실 수 있나요?",
+        "answer_html": """
+<p><strong style="color:#2C6FB5;">입지계수(LQ)는 무엇인가요?</strong><br>전국 평균과 비교해 이 지역이 화물차에 얼마나 치우쳐 있는지를 나타내는 값입니다.</p>
+<p></p>
+
+<p><strong style="color:#2C6FB5;">12개월 가속도는 무엇인가요?</strong><br>성장 속도가 빨라지고 있는지를 나타냅니다. 두 지역이 똑같이 5% 늘었어도, 한 곳은 점점 빨라지는 중이고 다른 곳은 식어가는 중일 수 있습니다.</p>
+<p></p>
+
+<p><strong style="color:#2C6FB5;">추세 지속성은 무엇인가요?</strong><br>화물차가 꾸준히 늘고 있는지를 나타냅니다. 값이 높을수록 일시적 변동이 아닌 실제 추세로 봅니다.</p>
+<p></p>
+
+<p><strong style="color:#2C6FB5;">인구-화물 디커플링은 무엇인가요?</strong><br>인구 증가와 상관없이 화물차만 늘어나는 현상입니다.</p>
+<p></p>
+
+<p><strong style="color:#2C6FB5;">영업용 전환율은 무엇인가요?</strong><br>자가용 화물차에서 영업용으로 옮겨가는 정도입니다. 자가용 화물차는 농업용이나 개인 용도가 섞여 있지만, 영업용은 물류를 사업으로 하는 차량입니다.</p>
+<p></p>
+
+<p><strong style="color:#2C6FB5;">인구 1천 명당 화물차는 왜 보나요?</strong><br>지역 규모를 감안한 화물차 밀집도입니다. 인구 50만 도시에 화물차 1만 대와 인구 5만 군에 화물차 5천 대 중, 밀집도는 후자가 훨씬 높습니다.</p>
+<p></p>
+""",
     },
 )
 
@@ -59,6 +77,23 @@ def _set_view(view: str) -> None:
 def _advance_form_generation() -> None:
     """새 위젯 키를 사용하게 해 문의 입력값을 초기화한다."""
     st.session_state.inquiry_form_generation = st.session_state.get("inquiry_form_generation", 0) + 1
+
+
+def _reset_inquiry_form() -> None:
+    """현재 문의 폼의 입력 상태만 초기값으로 되돌린다."""
+    generation = st.session_state.get("inquiry_form_generation", 0)
+    defaults = {
+        "company": "",
+        "manager": "",
+        "email": "",
+        "contact": "",
+        "type": "선택해 주세요",
+        "content": "",
+        "privacy": False,
+    }
+    for name, value in defaults.items():
+        st.session_state[f"inquiry_{name}_{generation}"] = value
+    st.session_state.pop("inquiry_success_message", None)
 
 
 def _render_tabs(view: str) -> None:
@@ -79,7 +114,10 @@ def _render_faq() -> None:
     with st.container(key="faq_list"):
         for faq in FAQS:
             with st.expander(faq["question"]):
-                st.write(faq["answer"] or "답변을 준비하고 있습니다.")
+                if answer_html := faq.get("answer_html"):
+                    st.markdown(answer_html, unsafe_allow_html=True)
+                else:
+                    st.write(faq.get("answer") or "답변을 준비하고 있습니다.")
 
 
 def _render_inquiry() -> None:
@@ -89,6 +127,12 @@ def _render_inquiry() -> None:
       <p>문의 내용을 등록하면 관리자가 확인한 뒤 입력하신 연락처로 답변드립니다.</p>
     </section>
     """)
+    _render_inquiry_body()
+
+
+@st.fragment
+def _render_inquiry_body() -> None:
+    """문의 폼과 안내 영역만 부분 실행해 페이지 제목의 재렌더링을 막는다."""
     if success_message := st.session_state.pop("inquiry_success_message", None):
         st.success(success_message)
 
@@ -124,12 +168,11 @@ def _render_inquiry() -> None:
             inquiry_content = st.text_area("문의 내용 :red[필수]", max_chars=1000, height=130, key=key("content"))
             privacy_agreed = st.checkbox("개인정보 수집 및 이용에 동의합니다 (필수)", key=key("privacy"))
             cancel_col, submit_col = st.columns(2, gap="small")
-            cancelled = cancel_col.form_submit_button("취소", use_container_width=True)
+            cancel_col.form_submit_button(
+                "초기화", use_container_width=True, on_click=_reset_inquiry_form
+            )
             submitted = submit_col.form_submit_button("문의 보내기", type="primary", use_container_width=True)
 
-        if cancelled:
-            _advance_form_generation()
-            st.rerun()
         if submitted:
             selected_type = "" if inquiry_type == "선택" else inquiry_type
             try:
@@ -143,7 +186,7 @@ def _render_inquiry() -> None:
             if result["success"]:
                 st.session_state.inquiry_success_message = result["message"]
                 _advance_form_generation()
-                st.rerun()
+                st.rerun(scope="fragment")
             else:
                 st.error(result["message"])
 
