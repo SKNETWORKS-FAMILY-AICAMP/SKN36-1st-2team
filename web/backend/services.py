@@ -22,6 +22,7 @@ from .queries import (
     get_region_areas,
     get_region_count,
     get_regions,
+    get_regions_by_province,
     get_vehicle_category_counts,
     get_vehicle_data,
     get_vehicle_history,
@@ -199,6 +200,89 @@ def get_region_trend(
             for row in population_rows
         ],
     }
+
+
+def get_freight_per_population_trend(
+    db: MySQLDB,
+    start_date: str,
+    end_date: str,
+    province_name: str | None = None,
+    region_code: str | None = None,
+) -> list[dict[str, Any]]:
+    """전국·시도·시군구의 월별 화물차 합계와 인구 1천명당 값을 반환한다."""
+    start = shift_year_month(start_date, 0)
+    end = shift_year_month(end_date, 0)
+    if start > end:
+        raise ValueError("start_date는 end_date보다 늦을 수 없습니다.")
+
+    months: list[str] = []
+    month = start
+    while month <= end:
+        months.append(month)
+        month = shift_year_month(month, 1)
+
+    vehicle_rows = get_national_vehicle_metrics(db, months)
+    population_rows = get_national_population_history(db, start, end)
+    population_by_key = {
+        (row["region_code"], row["date"]): row["population"]
+        for row in population_rows
+    }
+    # 같은 지역·월에 차량과 인구가 모두 있는 관측치만 비율 모집단에 포함한다.
+    matched = [
+        {
+            "region_code": row["region_code"],
+            "date": row["date"],
+            "truck_count": row["truck_count"],
+            "population": population_by_key[(row["region_code"], row["date"])],
+        }
+        for row in vehicle_rows
+        if (row["region_code"], row["date"]) in population_by_key
+        and population_by_key[(row["region_code"], row["date"])] is not None
+        and population_by_key[(row["region_code"], row["date"])] > 0
+    ]
+
+    allowed_codes: set[str] | None = None
+    if region_code is not None:
+        region = get_region(db, region_code)
+        allowed_codes = {region_code} if region is not None else set()
+    elif province_name is not None:
+        allowed_codes = {
+            row["region_code"] for row in get_regions_by_province(db, province_name)
+        }
+
+    def aggregate(rows: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
+        totals: dict[str, dict[str, int]] = {}
+        for row in rows:
+            bucket = totals.setdefault(row["date"], {"truck_count": 0, "population": 0})
+            bucket["truck_count"] += row["truck_count"]
+            bucket["population"] += row["population"]
+        return totals
+
+    national = aggregate(matched)
+    scoped_rows = (
+        matched
+        if allowed_codes is None
+        else [row for row in matched if row["region_code"] in allowed_codes]
+    )
+    scoped = aggregate(scoped_rows)
+
+    result = []
+    for date in sorted(scoped):
+        values = scoped[date]
+        national_values = national.get(date)
+        population = values["population"]
+        national_population = national_values["population"] if national_values else 0
+        result.append({
+            "date": date,
+            "truck_count": values["truck_count"],
+            "population": population,
+            "truck_per_1000": values["truck_count"] / population * 1000,
+            "national_truck_per_1000": (
+                national_values["truck_count"] / national_population * 1000
+                if national_values and national_population > 0 else None
+            ),
+        })
+    return result
 
 
 def get_logistics_score(
