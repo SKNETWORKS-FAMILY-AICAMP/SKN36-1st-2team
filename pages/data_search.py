@@ -9,7 +9,8 @@ from streamlit_folium import st_folium
 from ui import charts
 from ui.backend import get_db
 from ui.layout import setup, html
-from web.backend import (get_logistics_ranking, get_logistics_score,
+from web.backend import (get_freight_per_population_trend,
+    get_logistics_ranking, get_logistics_score,
     get_province_freight_counts, get_region_detail, get_region_trend,
     get_regions, get_regions_by_province, get_supplemental_logistics_metrics)
 
@@ -21,19 +22,21 @@ METRICS = {
     "화물차": ("화물차", "sum", "{:,.0f}대")}
 EVIDENCE_FIELDS = {
     "산업성": [
-        ("입지계수 LQ", "LQ", "{:.2f}"),
         ("영업용 비중", "영업용비중", "{:.1f}%"),
+        ("입지계수 LQ", "LQ", "{:.2f}"),
         ("화물차 비율", "화물차비율", "{:.1f}%"),
-        ("화물차 대수", "화물차", "{:,.0f}대"),
+        ("인구 1천명당 화물차", "인구1천명당화물차", "{:,.1f}대"),
     ],
     "성장성": [
-        ("화물차 증가율", "화물차_증가율", "{:+.1f}%"),
-        ("가속도", "가속도", "{:+.1f}%p"),
+        ("인구-화물 디커플링", "디커플링", "{:+.1f}%p"),
+        ("12개월 가속도", "가속도", "{:+.1f}%p"),
         ("추세 지속성", "추세지속성", "{:.2f}"),
         ("영업용 전환율", "영업용전환율", "{:.2f}"),
+        ("화물차 전년동월비", "화물차_증가율", "{:+.1f}%"),
+        ("안정성", "안정성", "{:.3f}"),
     ],
     "수요성": [
-        ("인구 성장 지속성", "인구_성장지속성", "{:.1f}%"),
+        ("인접권 인구", "인접권인구", "{:,.0f}명"),
         ("자체 인구", "인구수", "{:,.0f}명"),
         ("인구 밀도", "인구밀도", "{:,.1f}명/km²"),
         ("인구 증가율", "인구_증가율", "{:+.1f}%"),
@@ -72,15 +75,41 @@ def load_region_data():
             "화물차비율": raw["truck_ratio"], "화물차_증가율": raw["yoy_growth"],
             "가속도": raw["acceleration"], "인구수": raw["population"],
             "인구1만명당화물차": raw["truck_per_10000"],
+            "인구1천명당화물차": raw.get("truck_per_1000"),
             "LQ": extra.get("location_quotient"),
             "영업용비중": extra.get("commercial_truck_share"),
             "추세지속성": extra.get("trend_persistence"),
             "영업용전환율": extra.get("commercial_conversion_rate"),
+            "디커플링": extra.get("decoupling"),
+            "안정성": extra.get("stability"),
+            "인접권인구": extra.get("adjacent_population"),
             "인구_증가율": extra.get("population_yoy_growth"),
             "인구_성장지속성": extra.get("population_trend_persistence"),
             "면적_km2": extra.get("area_km2"),
-            "인구밀도": extra.get("population_density")})
-    return pd.DataFrame(rows), get_province_freight_counts(get_db(), TARGET_MONTH)
+            "인구밀도": extra.get("population_density"),
+            "화물차밀도": extra.get("freight_density")})
+    data = pd.DataFrame(rows)
+    if not data.empty:
+        growth_mean = data["화물차_증가율"].mean()
+        density_mean = data["화물차밀도"].mean()
+        data["유형"] = data.apply(
+            lambda row: classify_region(row["화물차밀도"], row["화물차_증가율"], density_mean, growth_mean),
+            axis=1,
+        )
+    return data, get_province_freight_counts(get_db(), TARGET_MONTH)
+
+
+def classify_region(density, growth, density_mean, growth_mean):
+    """PDF의 화물차 밀도·YoY 4분면으로 경합도 라벨을 계산한다."""
+    if any(pd.isna(value) for value in (density, growth, density_mean, growth_mean)):
+        return "분류 불가"
+    specialized, growing = density >= density_mean, growth >= growth_mean
+    return {
+        (False, True): "미개척",
+        (True, True): "성장 중",
+        (True, False): "포화",
+        (False, False): "정체",
+    }[(specialized, growing)]
 
 @st.cache_data(ttl=3600)
 def load_province_regions(province): return get_regions_by_province(get_db(), province)
@@ -91,6 +120,19 @@ def load_selected_detail(code):
 
 @st.cache_data(ttl=3600)
 def load_trend(code): return get_region_trend(get_db(), code, TREND_START, TREND_END)
+
+
+@st.cache_data(ttl=3600)
+def load_freight_trend(code=None, province=None):
+    rows = get_freight_per_population_trend(
+        get_db(), TREND_START, TREND_END,
+        province_name=province, region_code=code,
+    )
+    return pd.DataFrame(rows).rename(columns={
+        "date": "연월", "truck_count": "화물차수",
+        "truck_per_1000": "인구천명당_화물차",
+        "national_truck_per_1000": "전국평균",
+    })
 
 @st.cache_data
 def load_geo_sido():
@@ -143,13 +185,14 @@ with c2:
         sgg_opts = ["전체"] + sorted(df[df["region_code"].isin(codes)]["시군구"])
     sgg = st.selectbox("시군구", sgg_opts, disabled=sido == "전체", key="sgg_select", label_visibility="collapsed")
 with c3:
-    # 유형은 원본 UI 자리를 유지하되, 실제 DB에 근거 컬럼이 없으므로 가짜 옵션을 만들지 않는다.
     picked = st.multiselect(
-        "유형", [], placeholder="유형 전체", label_visibility="collapsed"
+        "유형", ["미개척", "성장 중", "포화", "정체"],
+        placeholder="유형 전체", label_visibility="collapsed"
     )
 with c4:
     # 원본의 slider 위치를 유지하고 실제 DB 자체 인구로 필터링한다.
     lo, hi = int(df["인구수"].min()), int(df["인구수"].max())
+    html('<div class="wl-pop-filter-label">인구 배후</div>')
     pop = st.slider(
         "인구", lo, hi, (lo, hi), step=10_000, label_visibility="collapsed"
     )
@@ -157,6 +200,8 @@ with c5:
     metric_label = st.selectbox("지표", list(METRICS), label_visibility="collapsed")
 metric_col, metric_how, metric_fmt = METRICS[metric_label]
 passed = df[(df["인구수"] >= pop[0]) & (df["인구수"] <= pop[1])]
+if picked:
+    passed = passed[passed["유형"].isin(picked)]
 scoped = (passed if sido == "전체" else passed[passed["시도"] == sido]).sort_values(metric_col, ascending=False)
 sel_row = sel_rank = None
 if sgg != "전체":
@@ -264,35 +309,121 @@ with col_right:
     else:
         rows="".join(f'<div class="wl-rank-row"><span class="wl-rank-no">{i}</span><span class="wl-rank-name">{r["시도"]} {r["시군구"]}</span><b class="wl-rank-val">{metric_fmt.format(r[metric_col])}</b></div>' for i,(_,r) in enumerate(scoped.head(14).iterrows(),1)); html(f'<div class="wl-panel"><div class="wl-rank-head">{scope_txt} &#183; {metric_label} 순</div><div class="wl-rank">{rows}</div></div>')
 
-mode = st.radio(
-    "보기", ["이 지역만", "전국 평균과 비교"],
-    horizontal=True, label_visibility="collapsed",
-)
+TYPES = ["미개척", "성장 중", "포화", "정체"]
 
-if sel_row is None:
-    html('<div class="wl-chart-ph">지역을 선택하면 그래프가 표시됩니다<span>추이와 경합도 산점도</span></div>')
-elif mode == "전국 평균과 비교":
-    html('<div class="wl-chart-ph">비교 모드는 준비 중입니다<span>전국 평균선을 겹쳐 그릴 예정</span></div>')
-else:
-    g1, g2 = st.columns(2, gap="medium")
-    with g1:
-        html(f'<div class="wl-chart-title">{sgg} &#183; 37개월 추이</div>')
-        trend = load_trend(sel_row["region_code"])
-        vehicles = pd.DataFrame(trend["vehicle_history"]).rename(
-            columns={"date": "연월", "vehicle_count": "차량등록대수"}
-        )
-        population = pd.DataFrame(trend["population_history"]).rename(
-            columns={"date": "연월", "population": "인구수"}
-        )
-        if vehicles.empty and population.empty:
-            html('<div class="wl-chart-ph">추이 데이터가 없습니다</div>')
+
+def ph(title, sub, height=320):
+    html(f'<div class="wl-chart-ph" style="height:{height}px">{title}<span>{sub}</span></div>')
+
+
+level = "시군구" if sel_row is not None else ("시도" if sido != "전체" else "전국")
+scope_name = sgg if level == "시군구" else (sido if level == "시도" else "전국")
+scope_df = passed[passed["시도"] == sido] if level == "시군구" else scoped
+if scope_df.empty:
+    scope_df = df if level == "전국" else df[df["시도"] == sido]
+
+mode = st.radio(
+    "보기", ["이대로 보기", "전국 평균과 비교"], horizontal=True,
+    label_visibility="collapsed", disabled=(level == "전국"),
+)
+compare = mode == "전국 평균과 비교" and level != "전국"
+html(f'<div class="wl-chart-title">{scope_name} &#183; 상세 분석</div>')
+
+
+def build_metrics():
+    if level == "시군구":
+        row = sel_row
+        per_k = row["화물차"] / row["인구수"] * 1000 if row["인구수"] else 0
+        nat_per_k = (df["화물차"].sum() / df["인구수"].sum() * 1000)
+
+        def delta(col):
+            return f'{row[col] - df[col].mean():+.1f}' if compare else None
+
+        return [
+            {"label": "종합점수", "value": f'{row["종합점수"]:.1f}',
+             "delta": delta("종합점수"), "help": f'전국 {int(sel_rank["종합점수"])}위 / {N}'},
+            {"label": "화물차 비율", "value": f'{row["화물차비율"]:.1f}%',
+             "delta": delta("화물차비율")},
+            {"label": "인구 1천명당 화물차", "value": f"{per_k:,.1f}대",
+             "delta": f"{per_k - nat_per_k:+.1f}" if compare else None},
+            {"label": "자체 인구", "value": f'{row["인구수"] / 10000:,.1f}만'},
+        ]
+
+    def avg_delta(col):
+        return f'{scope_df[col].mean() - df[col].mean():+.1f}' if compare else None
+
+    return [
+        {"label": "지역 수", "value": f"{len(scope_df):,}개"},
+        {"label": "평균 종합점수", "value": f'{scope_df["종합점수"].mean():.1f}',
+         "delta": avg_delta("종합점수")},
+        {"label": "평균 화물차 비율", "value": f'{scope_df["화물차비율"].mean():.1f}%',
+         "delta": avg_delta("화물차비율")},
+        {"label": "화물차 합계", "value": f'{scope_df["화물차"].sum():,.0f}대'},
+    ]
+
+
+charts.metric_row(build_metrics())
+
+detail = None
+if sel_row is not None:
+    detail, _ = load_selected_detail(sel_row["region_code"])
+
+a1, a2 = st.columns(2, gap="medium")
+with a1:
+    with st.container(border=True):
+        html('<div class="wl-chart-sub">차량 구성비</div>')
+        if level == "시군구" and detail:
+            category_df = pd.DataFrame(detail["vehicle_categories"])
+            if category_df.empty:
+                ph("차량 구성비", "기준월 카테고리 데이터 없음")
+            else:
+                shares = category_df.groupby("category_main")["vehicle_count"].sum().to_dict()
+                national_freight = df["화물차"].sum() / df["차량총"].sum() * 100
+                avg = {"화물": national_freight, "그 외 차량": 100 - national_freight}
+                charts.composition_bar(shares, avg=avg if compare else None, label=sgg, key="compo")
         else:
-            trend_df = pd.merge(vehicles, population, on="연월", how="outer").sort_values("연월")
-            charts.trend_chart(
-                trend_df,
-                series={"차량등록대수": "차량 등록", "인구수": "인구"},
-                key="region_trend",
+            freight = scope_df["화물차"].sum() / scope_df["차량총"].sum() * 100
+            national_freight = df["화물차"].sum() / df["차량총"].sum() * 100
+            charts.composition_bar(
+                {"화물": freight, "그 외 차량": 100 - freight},
+                avg={"화물": national_freight, "그 외 차량": 100 - national_freight} if compare else None,
+                label=f"{scope_name} 합계", key="compo",
             )
-    with g2:
-        html('<div class="wl-chart-title">경합도 · 전국 249개 중 위치</div>')
-        html('<div class="wl-chart-ph">경합도 산점도는 표시하지 않습니다<span>화물차 밀도 계산에 필요한 면적 데이터가 없습니다</span></div>')
+
+with a2:
+    with st.container(border=True):
+        sub = "유형별 지역 수" if level != "시군구" else f"{sido} 유형 분포"
+        html(f'<div class="wl-chart-sub">{sub}</div>')
+        counts = scope_df["유형"].value_counts()
+        charts.type_bar(
+            {name: int(counts.get(name, 0)) for name in TYPES},
+            selected=sel_row["유형"] if level == "시군구" else None,
+            key="typebar",
+        )
+
+b1, b2 = st.columns(2, gap="medium")
+freight_trend = load_freight_trend(
+    code=sel_row["region_code"] if sel_row is not None else None,
+    province=sido if level == "시도" else None,
+)
+with b1:
+    with st.container(border=True):
+        html('<div class="wl-chart-sub">연도별 화물차 증감</div>')
+        if freight_trend.empty:
+            ph("연도별 증감", "월별 화물차 데이터 없음")
+        else:
+            yearly = freight_trend.copy()
+            yearly["연도"] = yearly["연월"].str[:4]
+            yearly["월"] = yearly["연월"].str[5:7].astype(int)
+            cutoff = int(TARGET_MONTH[-2:])
+            # 등록대수는 흐름량이 아닌 월말 재고이므로 합산하지 않고
+            # 각 연도의 동일 기준월(7월) 스냅샷끼리 비교한다.
+            yearly = yearly[yearly["월"] == cutoff][["연도", "화물차수"]]
+            charts.yoy_chart(yearly, key="yoy")
+with b2:
+    with st.container(border=True):
+        html('<div class="wl-chart-sub">인구 1천명당 화물차 · 37개월</div>')
+        series = {"인구천명당_화물차": scope_name}
+        if compare:
+            series["전국평균"] = "전국 평균"
+        charts.trend_chart(freight_trend, x_col="연월", series=series, key="trend")

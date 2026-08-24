@@ -12,8 +12,8 @@ IMG_DIR = ROOT / "assets" / "img"
 NAV_LINKS = [
     ("서비스 소개",   "/"),
     ("데이터 조회",   "/data_search"),
-    ("유망지역 추천", "/유망지역_추천"),
-    ("FAQ · 문의",   "/문의"),
+    ("맞춤지역 추천", "/recommend"),
+    ("FAQ · 문의",   "/inquiry"),
 ]
 
 
@@ -44,13 +44,19 @@ def setup(page: str = "", active: str = "",
     """
     st.set_page_config(
         page_title=f"{title} | 물류 거점 예측 분석",
-        page_icon="▤",
+        page_icon=str(IMG_DIR / "waylogi-logo.png"),
         layout="wide",
         initial_sidebar_state="collapsed",
     )
 
-    # ── CSS : base + 페이지별 + 배경 변수 ──
+    # ── CSS : base + 공용 컴포넌트 + 페이지별 + 배경 변수 ──
+    # components.css 는 시군구 상세 패널처럼 여러 페이지에서 재사용할
+    # 컴포넌트 스타일을 모아둔 시트다. base.css 의 색상 토큰(--brand 등)을
+    # 그대로 참조하므로 반드시 base.css 다음, 페이지별 css 이전에 온다.
     css = (CSS_DIR / "base.css").read_text(encoding="utf-8")
+    components_css = CSS_DIR / "components.css"
+    if components_css.exists():
+        css += "\n" + components_css.read_text(encoding="utf-8")
     if page:
         css += "\n" + (CSS_DIR / f"{page}.css").read_text(encoding="utf-8")
     css += "\n" + _bg_var(hero_gif)
@@ -64,14 +70,12 @@ def setup(page: str = "", active: str = "",
         for label, href in NAV_LINKS
     )
 
+    logo_b64 = base64.b64encode((IMG_DIR / "waylogi.png").read_bytes()).decode()
     mark = (
         '<a class="wl-mark" href="/" target="_self">'
-        '<svg viewBox="0 0 40 34" width="30" height="26" aria-hidden="true">'
-        '<path d="M3 4 L11 27 L20 11 L29 27 L37 4" fill="none" '
-        'stroke="#2C6FB5" stroke-width="3.4" stroke-linecap="round" '
-        'stroke-linejoin="round"/>'
-        '<circle cx="20" cy="6" r="2.6" fill="#8FB8DC"/>'
-        '</svg><span>웨이로지</span></a>'
+        f'<img src="data:image/png;base64,{logo_b64}" class="wl-logo-img" '
+        'alt="웨이로지"/>'
+        '</a>'
     )
     pad = '<div class="wl-navpad"></div>' if navpad else ''
     st.markdown(

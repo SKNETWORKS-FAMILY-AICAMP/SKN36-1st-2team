@@ -143,12 +143,28 @@ def _render_inquiry_body() -> None:
     with form_col:
         with st.form(f"inquiry_form_{generation}", enter_to_submit=False):
             company_col, manager_col = st.columns(2, gap="medium")
-            company_name = company_col.text_input("회사명 :red[필수]", max_chars=100, key=key("company"))
-            manager_name = manager_col.text_input("담당자명 :red[필수]", max_chars=50, key=key("manager"))
+            company_name = company_col.text_input(
+                "회사명 :red[필수]", max_chars=100, key=key("company"),
+                placeholder="웨이로지",
+                help="한글, 영문, 숫자와 일반적인 회사명 기호만 입력할 수 있습니다.",
+            )
+            manager_name = manager_col.text_input(
+                "담당자명 :red[필수]", max_chars=50, key=key("manager"),
+                placeholder="김웨이",
+                help="한글, 영문, 공백, 하이픈(-), 작은따옴표(')만 입력할 수 있습니다.",
+            )
             email_col, contact_col = st.columns(2, gap="medium")
-            email = email_col.text_input("이메일 :red[필수]", max_chars=255, key=key("email"))
-            contact = contact_col.text_input("연락처 :gray[선택]", max_chars=30, key=key("contact"))
-            inquiry_type = st.selectbox("문의 유형 :red[필수]", ("선택해 주세요", *INQUIRY_TYPES), key=key("type"))
+            email = email_col.text_input(
+                "이메일 :red[필수]", max_chars=255, key=key("email"),
+                placeholder="waylogi@gmail.com",
+                help="예: name@example.com",
+            )
+            contact = contact_col.text_input(
+                "연락처 :gray[선택]", max_chars=30, key=key("contact"),
+                placeholder="010-0000-0000",
+                help="숫자, 공백, 하이픈(-), 괄호, 국가번호(+)를 사용할 수 있습니다.",
+            )
+            inquiry_type = st.selectbox("문의 유형 :red[필수]", ("선택", *INQUIRY_TYPES), key=key("type"))
             inquiry_content = st.text_area("문의 내용 :red[필수]", max_chars=1000, height=130, key=key("content"))
             privacy_agreed = st.checkbox("개인정보 수집 및 이용에 동의합니다 (필수)", key=key("privacy"))
             cancel_col, submit_col = st.columns(2, gap="small")
@@ -158,7 +174,7 @@ def _render_inquiry_body() -> None:
             submitted = submit_col.form_submit_button("문의 보내기", type="primary", use_container_width=True)
 
         if submitted:
-            selected_type = "" if inquiry_type == "선택해 주세요" else inquiry_type
+            selected_type = "" if inquiry_type == "선택" else inquiry_type
             try:
                 result = create_inquiry(
                     db=get_db(), company_name=company_name, manager_name=manager_name,

@@ -39,20 +39,33 @@ region_count = display_number(dashboard["region_count"])
 
 HERO = f"""
 <section class="wl-hero">
+<div class="routes" aria-hidden="true">
+<svg viewBox="0 0 1400 800" preserveAspectRatio="none">
+  <path class="dash" d="M0,600 Q350,300 700,500 T1400,350"
+        stroke="rgba(255,255,255,.30)" stroke-width="1.6" fill="none"/>
+  <path class="dash" d="M100,750 Q500,450 900,600 T1400,200"
+        stroke="rgba(127,178,240,.22)" stroke-width="1.4" fill="none"/>
+  <circle class="node" cx="700" cy="500" r="5" fill="#fff"/>
+  <circle class="node" cx="1100" cy="380" r="5" fill="#7FB2F0"/>
+  <circle class="node" cx="900" cy="600" r="4" fill="#fff" opacity=".8"/>
+</svg>
+</div>
 <div class="wl-hero-inner">
 
 <h1 class="wl-h1">
-데이터로 찾는<br>우리 회사의 다음 물류 거점
+거점을 정하는 데<br>
+필요한 건 감이 아니라 데이터
 </h1>
 
 <p class="wl-sub">
-전국 249개 시군구의 화물차&#183;인구 데이터를 분석해,
-기업이 어디에 거점을 두면 좋을지 알려드립니다.
+웨이로지는 전국 {region_count}개 시군구의 화물차 등록 데이터를 분석하는 물류 입지 분석 서비스입니다.<br>
+국토교통부 자동차등록현황과 주민등록 인구통계를 결합하여 산업성·성장성·수요성 기반의 물류 거점 적합도 지수를 산출합니다.<br>
+상권 분석 중심의 기존 서비스와 달리 화물 이동에 초점을 맞추어 기업의 거점 선정 의사결정을 지원합니다.
 </p>
 
 <div class="wl-cta-row">
-<a class="wl-btn wl-btn-primary" href="/유망지역_추천" target="_self">유망지역 추천 받기</a>
-<a class="wl-btn wl-btn-ghost"   href="/데이터_조회"   target="_self">데이터 먼저 보기</a>
+<a class="wl-btn wl-btn-primary" href="/recommend" target="_self">맞춤지역 추천 받기</a>
+<a class="wl-btn wl-btn-ghost"   href="/data_search" target="_self">데이터 먼저 보기</a>
 </div>
 
 <div class="wl-stats">
@@ -125,7 +138,7 @@ WHY = f"""
             <div class="wl-why-h">창고가 아니라 지역 가능성을 봅니다</div>
             <div class="wl-why-d">
               부동산 매물은 지금 나와 있는 창고만 보여줍니다.
-              웨이로지는 249개 시군구의 차량 등록과 인구를 겹쳐,
+              웨이로지는 {region_count}개 시군구의 차량 등록과 인구를 겹쳐,
               <b>아직 창고가 없는 곳</b>까지 후보에 올립니다.
             </div>
           </div>
@@ -230,7 +243,7 @@ FLOW = f"""
         <div class="wl-step-no">STEP 01</div>
         <div class="wl-step-h">지역 탐색</div>
         <div class="wl-step-d">
-          전국 249개 시군구가 지표별로 색칠된 지도에서
+          전국 {region_count}개 시군구가 지표별로 색칠된 지도에서
           어디가 짙은지 먼저 봅니다.
         </div>
         <div class="wl-step-fig">{FIG_MAP}</div>
@@ -250,7 +263,7 @@ FLOW = f"""
         <div class="wl-step-no">STEP 03</div>
         <div class="wl-step-h">맞춤 순위</div>
         <div class="wl-step-d">
-          조정된 가중치로 249개 지역을 다시 계산해
+          조정된 가중치로 {region_count}개 지역을 다시 계산해
           상위 후보를 정렬합니다.
         </div>
         <div class="wl-step-fig">{FIG_RANK}</div>
@@ -274,7 +287,7 @@ FLOW = f"""
 
 html(FLOW)
 
-CONTACT = """
+CONTACT = f"""
 <section class="wl-contact">
   <div class="wl-contact-inner">
 
@@ -287,8 +300,8 @@ CONTACT = """
     </div>
 
     <div class="wl-contact-cta">
-      <a class="wl-btn wl-btn-primary" href="/문의" target="_self">문의 남기기</a>
-      <a class="wl-btn wl-btn-ghost-lt" href="/문의" target="_self">자주 묻는 질문</a>
+      <a class="wl-btn wl-btn-primary" href="/inquiry" target="_self">문의 남기기</a>
+      <a class="wl-btn wl-btn-ghost-lt" href="/inquiry" target="_self">자주 묻는 질문</a>
     </div>
 
     <div class="wl-faq-peek">
@@ -310,7 +323,7 @@ CONTACT = """
         <div class="wl-faq-q-t">데이터는 언제까지인가요?</div>
         <div class="wl-faq-q-a">
           2023년 7월부터 2026년 7월까지 37개월,
-          전국 249개 시군구를 월 단위로 봅니다.
+          전국 {region_count}개 시군구를 월 단위로 봅니다.
         </div>
       </div>
     </div>

@@ -113,6 +113,25 @@ class SupplementalCalculationTest(unittest.TestCase):
             self.calculate(vehicle_rows=rows)["A"]["raw"]["commercial_conversion_rate"]
         )
 
+    def test_negative_denominator_is_calculated(self):
+        vehicle_rows = make_vehicle_rows()
+        commercial_rows = make_commercial_rows()
+        for row in vehicle_rows:
+            if row["region_code"] == "A" and row["date"] == "2026-07":
+                row["truck_count"] = 50
+            elif row["region_code"] == "A" and row["date"] == "2025-07":
+                row["truck_count"] = 100
+        for row in commercial_rows:
+            if row["region_code"] == "A" and row["date"] == "2026-07":
+                row["commercial_truck_count"] = 30
+            elif row["region_code"] == "A" and row["date"] == "2025-07":
+                row["commercial_truck_count"] = 40
+        raw = self.calculate(
+            vehicle_rows=vehicle_rows,
+            commercial_rows=commercial_rows,
+        )["A"]["raw"]
+        self.assertEqual(raw["commercial_conversion_rate"], 0.2)
+
     def test_missing_history_makes_persistence_none(self):
         history = {"2026-07": 100}
         self.assertIsNone(calculate_trend_persistence(history, "2026-07"))

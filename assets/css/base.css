@@ -59,6 +59,12 @@ html, body, [class*="css"] {
   font-size: 20px; font-weight: 700; letter-spacing: -.03em;
   color: #1F4E79 !important;
 }
+.wl-logo-img {
+  display: block;
+  width: auto;
+  height: 44px;
+  object-fit: contain;
+}
 
 .wl-navlinks {
   display: flex; gap: clamp(24px, 3vw, 44px);

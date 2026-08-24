@@ -56,6 +56,7 @@ def main() -> None:
 
     lines = [
         "-- Generated from validated Excel sources by etl/build_seed_from_excel.py.",
+        "USE logistics_db;",
         "SET NAMES utf8mb4;", "SET FOREIGN_KEY_CHECKS=0;", "START TRANSACTION;",
         "DELETE FROM vehicle;", "DELETE FROM people;", "DELETE FROM category;",
         "DELETE FROM `date`;", "DELETE FROM region;", "",

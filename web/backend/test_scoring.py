@@ -48,6 +48,39 @@ def make_population_rows() -> list[dict]:
     ]
 
 
+def make_pdf_metrics() -> dict:
+    """축 내부 동일비중 평균을 손으로 검산할 수 있는 백분위 fixture."""
+    result = {}
+    for code, values in {
+        "A": {
+            "commercial_truck_share": (40.0, 0.0),
+            "location_quotient": (1.2, 50.0),
+            "truck_ratio": (50.0, 50.0),
+            "freight_per_1000": (200.0, 100.0),
+            "decoupling": (90.0, 100.0),
+            "acceleration": (10.0, 0.0),
+            "trend_persistence": (0.8, 50.0),
+            "commercial_conversion_rate": (0.4, 25.0),
+            "freight_yoy_growth": (100.0, 100.0),
+            "stability": (0.9, 50.0),
+            "adjacent_population": (None, None),
+            "population": (1_000, 0.0),
+            "population_density": (100.0, 100.0),
+            "population_yoy_growth": (2.0, 50.0),
+        },
+        "B": {}, "C": {},
+    }.items():
+        if not values:
+            values = {
+                key: (0.0, 50.0) for key in result["A"]["raw"]
+            }
+        result[code] = {
+            "raw": {key: raw for key, (raw, _) in values.items()},
+            "normalized": {f"{key}_score": score for key, (_, score) in values.items()},
+        }
+    return result
+
+
 class ScoringHelperTest(unittest.TestCase):
     """DB를 사용하지 않고 증가율·백분위·입력 검증 함수를 확인한다."""
 
@@ -118,6 +151,7 @@ class LogisticsScoreFormulaTest(unittest.TestCase):
             target_date="2026-07",
             vehicle_rows=make_vehicle_rows(),
             population_rows=make_population_rows(),
+            supplemental_metrics=make_pdf_metrics(),
         )
 
     def test_raw_metrics(self) -> None:
@@ -126,7 +160,7 @@ class LogisticsScoreFormulaTest(unittest.TestCase):
         self.assertEqual(self.result["raw"]["truck_ratio"], 50.0)
         self.assertEqual(self.result["raw"]["truck_per_10000"], 2000.0)
         self.assertEqual(self.result["raw"]["yoy_growth"], 100.0)
-        self.assertAlmostEqual(self.result["raw"]["acceleration"], -16.6667, places=4)
+        self.assertEqual(self.result["raw"]["acceleration"], 10.0)
 
     def test_normalized_metrics(self) -> None:
         # A는 화물차 수 중간, 비중 중간, YoY 최고, 가속도 최저, 인구 최저다.
@@ -137,21 +171,26 @@ class LogisticsScoreFormulaTest(unittest.TestCase):
         self.assertEqual(self.result["normalized"]["population_score"], 0.0)
 
     def test_component_score_formulas(self) -> None:
-        # 산업성 = 50*0.7 + 50*0.3 = 50
-        # 성장성 = 100*0.7 + 0*0.3 = 70
-        # 수요성 = 인구 백분위 = 0
+        # 산업성 = (영업용 0+LQ 50+인구천명당 100)/3 = 50
+        # 성장성 = (100+0+50+25+100+50)/6
+        # 수요성 = (자체인구 0+인구밀도 100+인구YoY 50)/3
         self.assertEqual(self.result["scores"]["industry"], 50.0)
-        self.assertEqual(self.result["scores"]["growth"], 70.0)
-        self.assertEqual(self.result["scores"]["demand"], 0.0)
+        self.assertAlmostEqual(self.result["scores"]["growth"], 54.1667, places=4)
+        self.assertEqual(self.result["scores"]["demand"], 50.0)
+        self.assertEqual(self.result["axis_completeness"]["industry"], {"available": 3, "required": 3})
+        self.assertEqual(self.result["axis_completeness"]["demand"], {"available": 3, "required": 3})
+        self.assertNotIn("truck_ratio", self.result["metrics"]["industry"])
+        self.assertNotIn("adjacent_population", self.result["metrics"]["demand"])
 
     def test_default_weight_total(self) -> None:
         self.assertEqual(
             self.result["normalized_weights"],
             {"industry": 0.3333, "growth": 0.3333, "demand": 0.3333},
         )
-        self.assertEqual(self.result["scores"]["total"], 40.0)
+        self.assertAlmostEqual(self.result["scores"]["total"], 51.3889, places=4)
         self.assertTrue(self.result["score_available"])
         self.assertIsNone(self.result["unavailable_reason"])
+        self.assertNotIn("demand.adjacent_population", self.result["unavailable_metrics"])
 
     def test_custom_weight_total(self) -> None:
         result = calculate_logistics_score(
@@ -162,10 +201,10 @@ class LogisticsScoreFormulaTest(unittest.TestCase):
             industry_weight=5,
             growth_weight=3,
             demand_weight=2,
+            supplemental_metrics=make_pdf_metrics(),
         )
-        # 50*0.5 + 70*0.3 + 0*0.2 = 46
         self.assertEqual(result["normalized_weights"], {"industry": 0.5, "growth": 0.3, "demand": 0.2})
-        self.assertEqual(result["scores"]["total"], 46.0)
+        self.assertAlmostEqual(result["scores"]["total"], 51.25, places=4)
 
     def test_percentage_weight_total(self) -> None:
         result = calculate_logistics_score(
@@ -176,13 +215,14 @@ class LogisticsScoreFormulaTest(unittest.TestCase):
             industry_weight=10,
             growth_weight=55,
             demand_weight=35,
+            supplemental_metrics=make_pdf_metrics(),
         )
 
         self.assertEqual(
             result["normalized_weights"],
             {"industry": 0.1, "growth": 0.55, "demand": 0.35},
         )
-        self.assertEqual(result["scores"]["total"], 43.5)
+        self.assertAlmostEqual(result["scores"]["total"], 52.2917, places=4)
 
     def test_missing_population_makes_total_unavailable(self) -> None:
         rows = [row for row in make_population_rows() if row["region_code"] != "A"]

@@ -22,6 +22,7 @@ from .queries import (
     get_region_areas,
     get_region_count,
     get_regions,
+    get_regions_by_province,
     get_vehicle_category_counts,
     get_vehicle_data,
     get_vehicle_history,
@@ -201,6 +202,89 @@ def get_region_trend(
     }
 
 
+def get_freight_per_population_trend(
+    db: MySQLDB,
+    start_date: str,
+    end_date: str,
+    province_name: str | None = None,
+    region_code: str | None = None,
+) -> list[dict[str, Any]]:
+    """전국·시도·시군구의 월별 화물차 합계와 인구 1천명당 값을 반환한다."""
+    start = shift_year_month(start_date, 0)
+    end = shift_year_month(end_date, 0)
+    if start > end:
+        raise ValueError("start_date는 end_date보다 늦을 수 없습니다.")
+
+    months: list[str] = []
+    month = start
+    while month <= end:
+        months.append(month)
+        month = shift_year_month(month, 1)
+
+    vehicle_rows = get_national_vehicle_metrics(db, months)
+    population_rows = get_national_population_history(db, start, end)
+    population_by_key = {
+        (row["region_code"], row["date"]): row["population"]
+        for row in population_rows
+    }
+    # 같은 지역·월에 차량과 인구가 모두 있는 관측치만 비율 모집단에 포함한다.
+    matched = [
+        {
+            "region_code": row["region_code"],
+            "date": row["date"],
+            "truck_count": row["truck_count"],
+            "population": population_by_key[(row["region_code"], row["date"])],
+        }
+        for row in vehicle_rows
+        if (row["region_code"], row["date"]) in population_by_key
+        and population_by_key[(row["region_code"], row["date"])] is not None
+        and population_by_key[(row["region_code"], row["date"])] > 0
+    ]
+
+    allowed_codes: set[str] | None = None
+    if region_code is not None:
+        region = get_region(db, region_code)
+        allowed_codes = {region_code} if region is not None else set()
+    elif province_name is not None:
+        allowed_codes = {
+            row["region_code"] for row in get_regions_by_province(db, province_name)
+        }
+
+    def aggregate(rows: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
+        totals: dict[str, dict[str, int]] = {}
+        for row in rows:
+            bucket = totals.setdefault(row["date"], {"truck_count": 0, "population": 0})
+            bucket["truck_count"] += row["truck_count"]
+            bucket["population"] += row["population"]
+        return totals
+
+    national = aggregate(matched)
+    scoped_rows = (
+        matched
+        if allowed_codes is None
+        else [row for row in matched if row["region_code"] in allowed_codes]
+    )
+    scoped = aggregate(scoped_rows)
+
+    result = []
+    for date in sorted(scoped):
+        values = scoped[date]
+        national_values = national.get(date)
+        population = values["population"]
+        national_population = national_values["population"] if national_values else 0
+        result.append({
+            "date": date,
+            "truck_count": values["truck_count"],
+            "population": population,
+            "truck_per_1000": values["truck_count"] / population * 1000,
+            "national_truck_per_1000": (
+                national_values["truck_count"] / national_population * 1000
+                if national_values and national_population > 0 else None
+            ),
+        })
+    return result
+
+
 def get_logistics_score(
     db: MySQLDB,
     region_code: str,
@@ -219,15 +303,22 @@ def get_logistics_score(
     if region is None:
         return None
 
-    # 성장성에는 기준월과 3·6·12개월 전 화물차 수가 필요하다.
-    required_months = [
-        target_date,
-        shift_year_month(target_date, -3),
-        shift_year_month(target_date, -6),
-        shift_year_month(target_date, -12),
-    ]
+    # 추세 지속성·안정성·12개월 가속도에 동일한 37개월 창을 사용한다.
+    required_months = [shift_year_month(target_date, offset) for offset in range(-36, 1)]
     vehicle_rows = get_national_vehicle_metrics(db, required_months)
+    commercial_rows = get_national_commercial_freight_counts(db, required_months)
     population_rows = get_national_population(db, target_date)
+    previous_population_rows = get_national_population(
+        db, shift_year_month(target_date, -12)
+    )
+    population_history_rows = get_national_population_history(
+        db, required_months[0], target_date
+    )
+    area_rows = get_region_areas(db)
+    supplemental_metrics = calculate_supplemental_metrics(
+        target_date, vehicle_rows, commercial_rows, population_rows,
+        previous_population_rows, population_history_rows, area_rows,
+    )
 
     # scoring.py는 DB를 모르고 전달받은 원본 값만으로 백분위와 점수를 계산한다.
     return calculate_logistics_score(
@@ -238,6 +329,7 @@ def get_logistics_score(
         industry_weight=industry_weight,
         growth_weight=growth_weight,
         demand_weight=demand_weight,
+        supplemental_metrics=supplemental_metrics,
     )
 
 
@@ -255,17 +347,24 @@ def get_logistics_ranking(
 
     target_date = shift_year_month(date, 0)
     normalize_weights(industry_weight, growth_weight, demand_weight)
-    required_months = [
-        target_date,
-        shift_year_month(target_date, -3),
-        shift_year_month(target_date, -6),
-        shift_year_month(target_date, -12),
-    ]
+    required_months = [shift_year_month(target_date, offset) for offset in range(-36, 1)]
 
     # 전국 공통 원본은 한 번씩만 조회하고 모든 지역 계산에 같은 목록을 재사용한다.
     regions = get_regions(db)
     vehicle_rows = get_national_vehicle_metrics(db, required_months)
+    commercial_rows = get_national_commercial_freight_counts(db, required_months)
     population_rows = get_national_population(db, target_date)
+    previous_population_rows = get_national_population(
+        db, shift_year_month(target_date, -12)
+    )
+    population_history_rows = get_national_population_history(
+        db, required_months[0], target_date
+    )
+    area_rows = get_region_areas(db)
+    supplemental_metrics = calculate_supplemental_metrics(
+        target_date, vehicle_rows, commercial_rows, population_rows,
+        previous_population_rows, population_history_rows, area_rows,
+    )
 
     scored_regions: list[dict[str, Any]] = []
     for region in regions:
@@ -277,6 +376,7 @@ def get_logistics_ranking(
             industry_weight=industry_weight,
             growth_weight=growth_weight,
             demand_weight=demand_weight,
+            supplemental_metrics=supplemental_metrics,
         )
         if not result["score_available"]:
             continue
@@ -288,6 +388,9 @@ def get_logistics_ranking(
                 "scores": result["scores"],
                 "raw": result["raw"],
                 "normalized": result["normalized"],
+                "metrics": result["metrics"],
+                "axis_completeness": result["axis_completeness"],
+                "unavailable_metrics": result["unavailable_metrics"],
                 "weights": result["weights"],
                 "normalized_weights": result["normalized_weights"],
             }
@@ -369,8 +472,22 @@ def create_inquiry(
             }
         cleaned[key] = normalized
 
-    # 최소한 아이디@도메인.확장자 형태인지 확인한다.
-    if re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", cleaned["email"]) is None:
+    if re.fullmatch(r"[가-힣A-Za-z0-9][가-힣A-Za-z0-9\s&().,·㈜_\-/]*", cleaned["company_name"]) is None:
+        return {
+            "success": False,
+            "message": "회사명에는 한글, 영문, 숫자와 일반적인 회사명 기호만 사용할 수 있습니다.",
+        }
+
+    if re.fullmatch(r"[가-힣A-Za-z]+(?:[\s'-][가-힣A-Za-z]+)*", cleaned["manager_name"]) is None:
+        return {
+            "success": False,
+            "message": "담당자명에는 한글, 영문, 공백, 하이픈(-), 작은따옴표(')만 사용할 수 있습니다.",
+        }
+
+    if re.fullmatch(
+        r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+",
+        cleaned["email"],
+    ) is None:
         return {"success": False, "message": "올바른 이메일 형식을 입력해주세요."}
 
     normalized_contact: str | None = None
@@ -380,6 +497,18 @@ def create_inquiry(
         normalized_contact = contact.strip() or None
         if normalized_contact is not None and len(normalized_contact) > 30:
             return {"success": False, "message": "연락처는 30자 이하로 입력해주세요."}
+        if normalized_contact is not None:
+            if re.fullmatch(r"\+?[0-9()\s-]+", normalized_contact) is None:
+                return {
+                    "success": False,
+                    "message": "연락처에는 숫자, 공백, 하이픈(-), 괄호, 국가번호(+)만 사용할 수 있습니다.",
+                }
+            digit_count = len(re.sub(r"\D", "", normalized_contact))
+            if not 8 <= digit_count <= 15:
+                return {
+                    "success": False,
+                    "message": "연락처는 숫자 기준 8~15자리로 입력해주세요.",
+                }
 
     # 개인정보 동의가 정확히 True가 아니면 INSERT 함수를 호출하지 않는다.
     if privacy_agreed is not True:
