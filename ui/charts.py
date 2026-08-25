@@ -24,22 +24,36 @@ GREEN = "#3B9E6B"
 AMBER = "#F2B705"
 RED = "#E2574C"
 
+# 데이터 조회 차트 팔레트 — 서비스 UI에서 반복 사용하는 네이비/블루 계열
+DATA_NAVY = "#14293D"
+DATA_DEEP = "#185FA5"
+DATA_PRIMARY = "#378ADD"
+DATA_SECONDARY = "#7FB2F0"
+DATA_LIGHT = "#B5D4F4"
+DATA_PALE = "#E6F1FB"
+DATA_MUTED = "#C9D6E2"
+DATA_GRID = "#EDF1F5"
+
 RADAR_AXES = ["종합점수", "산업성", "성장성", "수요성"]
 
 # 차량 구성비에 쓰는 색 — 화물차만 진하게 해서 눈이 먼저 가게 한다
 COMPO_COLORS = {
-    "화물차": LINE,
-    "승용차": "#B9CEE4",
-    "승합차": "#D6E3EF",
-    "특수차": "#EDF2F7",
+    "화물": DATA_DEEP,
+    "화물차": DATA_DEEP,
+    "영업용": DATA_DEEP,
+    "그 외 차량": DATA_LIGHT,
+    "자가용": DATA_LIGHT,
+    "승용차": DATA_LIGHT,
+    "승합차": DATA_SECONDARY,
+    "특수차": DATA_PALE,
 }
 
 # 유형별 지역 수에 쓰는 색
 TYPE_COLORS = {
-    "성장 중": LINE,
-    "미개척": GREEN,
-    "포화": AMBER,
-    "정체": POINT,
+    "정체": DATA_PALE,
+    "미개척": DATA_LIGHT,
+    "성장 중": DATA_PRIMARY,
+    "포화": DATA_DEEP,
 }
 
 # 세 축 그룹 막대 — 진한 순서로 산업성·성장성·수요성
@@ -195,7 +209,8 @@ def composition_bar(shares: dict[str, float], avg: dict[str, float] | None = Non
             texts.append(f"{pct:.1f}%" if pct >= 7 else "")
         fig.add_trace(go.Bar(
             x=xs, y=ys, name=cat, orientation="h",
-            marker=dict(color=COMPO_COLORS.get(cat, POINT),
+            marker=dict(color=COMPO_COLORS.get(
+                            cat, (DATA_DEEP, DATA_LIGHT)[cats.index(cat) % 2]),
                         line=dict(color="#fff", width=2)),
             text=texts, textposition="inside",
             insidetextfont=dict(size=11, color="#fff"),
@@ -229,7 +244,8 @@ def yoy_chart(df: pd.DataFrame, year_col: str = "연도",
 
     2026 년은 7월까지밖에 없으므로 호출하기 전에 세 해 모두
     1~7월 기준으로 잘라서 넘겨야 막대 높이 비교가 성립한다.
-    증가면 파랑, 감소면 빨강으로 칠해 감소 지역이 바로 걸러지게 했다.
+    기준 연도는 블루그레이, 비교 연도는 브랜드 블루로 표시한다.
+    증감 방향은 막대 위의 부호가 포함된 증감률 라벨로 구분한다.
     """
     if df is None or df.empty or value_col not in df:
         _empty("지역을 선택하면 표시됩니다", height)
@@ -242,10 +258,10 @@ def yoy_chart(df: pd.DataFrame, year_col: str = "연도",
     colors, texts = [], []
     for dv in deltas:
         if pd.isna(dv):
-            colors.append(POINT)
+            colors.append(DATA_MUTED)
             texts.append("기준")
         else:
-            colors.append(LINE if dv >= 0 else RED)
+            colors.append(DATA_PRIMARY)
             texts.append(f"{dv:+.1f}%")
 
     fig = go.Figure(go.Bar(
@@ -396,7 +412,10 @@ def trend_chart(df: pd.DataFrame, x_col: str = "연월",
 
     fig.add_trace(go.Scatter(
         x=x, y=df[cols[0]], mode="lines", name=series[cols[0]],
-        line=dict(color=LINE, width=2.4),
+        line=dict(color=DATA_PRIMARY, width=2.4),
+        marker=dict(color=DATA_PRIMARY),
+        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor=DATA_LIGHT,
+                        font=dict(color=INK)),
         hovertemplate="%{x}<br>%{y:,.1f}<extra></extra>",
     ))
 
@@ -404,7 +423,10 @@ def trend_chart(df: pd.DataFrame, x_col: str = "연월",
         trace_kw = {"yaxis": "y2"} if secondary else {}
         fig.add_trace(go.Scatter(
             x=x, y=df[cols[1]], mode="lines", name=series[cols[1]],
-            line=dict(color=MUTE, width=1.6, dash="dot"),
+            line=dict(color=DATA_MUTED, width=1.6, dash="dot"),
+            marker=dict(color=DATA_MUTED),
+            hoverlabel=dict(bgcolor="#FFFFFF", bordercolor=DATA_LIGHT,
+                            font=dict(color=INK)),
             hovertemplate="%{x}<br>%{y:,.1f}<extra></extra>",
             **trace_kw,
         ))
@@ -417,7 +439,7 @@ def trend_chart(df: pd.DataFrame, x_col: str = "연월",
 
     fig.update_xaxes(gridcolor="rgba(0,0,0,0)", tickfont=dict(size=10),
                      nticks=8)
-    fig.update_yaxes(gridcolor=GRID, zeroline=False, tickfont=dict(size=10))
+    fig.update_yaxes(gridcolor=DATA_GRID, zeroline=False, tickfont=dict(size=10))
     _base(fig, height=height, legend=len(cols) > 1)
     st.plotly_chart(fig, use_container_width=True, key=key, config={"displayModeBar": False})
 
@@ -498,7 +520,8 @@ def type_bar(counts: dict[str, int], selected: str | None = None,
     total = sum(values) or 1
 
     if selected is not None:
-        colors = [HIGHLIGHT if l == selected else POINT for l in labels]
+        colors = [DATA_NAVY if l == selected else TYPE_COLORS.get(l, DATA_MUTED)
+                  for l in labels]
     else:
         colors = [TYPE_COLORS.get(l, POINT) for l in labels]
 
