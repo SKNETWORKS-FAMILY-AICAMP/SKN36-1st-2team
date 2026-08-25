@@ -61,22 +61,22 @@ div[data-testid="stSliderTickBarMax"] {
 /* ── 상단 "지도로" 버튼 ──────────────────────────── */
 /* st.container(key="detail_back_btn") 로 감싼 버튼에만 적용된다. */
 .st-key-detail_back_btn button {
-  border: 1px solid #DDE4EB;
-  border-radius: 6px;
-  background: #fff;
-  color: var(--navy);
+  border: none;
+  border-radius: 0px;
+  background: transparent;
+  color: var(--mute);
   font-size: 13px;
   font-weight: 500;
-  padding: 6px 12px;
-  transition: border-color .15s ease, color .15s ease;
+  padding: 4px 0px;
+  transition: color .15s ease;
 }
 .st-key-detail_back_btn button:hover {
-  border-color: var(--brand-lt);
   color: var(--brand);
+  text-decoration : underline;
 }
 .st-key-detail_back_btn button:focus:not(:active) {
-  border-color: var(--brand-lt);
   color: var(--brand);
+  box-shadow:none;
 }
 
 /* ── 제목 영역 ──────────────────────────────────── */
