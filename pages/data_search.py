@@ -428,4 +428,7 @@ with b2:
         series = {"인구천명당_화물차": scope_name}
         if compare:
             series["전국평균"] = "전국 평균"
-        charts.trend_chart(freight_trend, x_col="연월", series=series, key="trend")
+        charts.trend_chart(
+            freight_trend, x_col="연월", series=series, key="trend",
+            data_palette=True,
+        )

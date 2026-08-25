@@ -385,7 +385,7 @@ def quadrant_chart(df: pd.DataFrame, selected=None,
 def trend_chart(df: pd.DataFrame, x_col: str = "연월",
                 series: dict[str, str] | None = None,
                 secondary: bool = False, height: int = 300,
-                key: str | None = None) -> None:
+                key: str | None = None, data_palette: bool = False) -> None:
     """37개월 추이 꺾은선.
 
     series 예시: {"인구천명당_화물차": "선택 지역", "전국평균": "전국 평균"}
@@ -409,13 +409,18 @@ def trend_chart(df: pd.DataFrame, x_col: str = "연월",
 
     x = df[x_col].astype(str)
     fig = go.Figure()
+    primary_color = DATA_PRIMARY if data_palette else LINE
+    comparison_color = DATA_MUTED if data_palette else MUTE
+    hover_style = (
+        dict(bgcolor="#FFFFFF", bordercolor=DATA_LIGHT, font=dict(color=INK))
+        if data_palette else None
+    )
 
     fig.add_trace(go.Scatter(
         x=x, y=df[cols[0]], mode="lines", name=series[cols[0]],
-        line=dict(color=DATA_PRIMARY, width=2.4),
-        marker=dict(color=DATA_PRIMARY),
-        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor=DATA_LIGHT,
-                        font=dict(color=INK)),
+        line=dict(color=primary_color, width=2.4),
+        marker=dict(color=primary_color),
+        hoverlabel=hover_style,
         hovertemplate="%{x}<br>%{y:,.1f}<extra></extra>",
     ))
 
@@ -423,10 +428,9 @@ def trend_chart(df: pd.DataFrame, x_col: str = "연월",
         trace_kw = {"yaxis": "y2"} if secondary else {}
         fig.add_trace(go.Scatter(
             x=x, y=df[cols[1]], mode="lines", name=series[cols[1]],
-            line=dict(color=DATA_MUTED, width=1.6, dash="dot"),
-            marker=dict(color=DATA_MUTED),
-            hoverlabel=dict(bgcolor="#FFFFFF", bordercolor=DATA_LIGHT,
-                            font=dict(color=INK)),
+            line=dict(color=comparison_color, width=1.6, dash="dot"),
+            marker=dict(color=comparison_color),
+            hoverlabel=hover_style,
             hovertemplate="%{x}<br>%{y:,.1f}<extra></extra>",
             **trace_kw,
         ))
@@ -439,7 +443,8 @@ def trend_chart(df: pd.DataFrame, x_col: str = "연월",
 
     fig.update_xaxes(gridcolor="rgba(0,0,0,0)", tickfont=dict(size=10),
                      nticks=8)
-    fig.update_yaxes(gridcolor=DATA_GRID, zeroline=False, tickfont=dict(size=10))
+    fig.update_yaxes(gridcolor=DATA_GRID if data_palette else GRID,
+                     zeroline=False, tickfont=dict(size=10))
     _base(fig, height=height, legend=len(cols) > 1)
     st.plotly_chart(fig, use_container_width=True, key=key, config={"displayModeBar": False})
 
