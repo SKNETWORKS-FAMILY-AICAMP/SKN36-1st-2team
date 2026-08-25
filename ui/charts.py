@@ -24,22 +24,39 @@ GREEN = "#3B9E6B"
 AMBER = "#F2B705"
 RED = "#E2574C"
 
+# 데이터 조회 차트 팔레트 — 브랜드 블루와 저채도 보라 계열의 조합
+CHART_COLORS = {
+    "navy": "#14293D",
+    "deep_blue": "#185FA5",
+    "blue": "#378ADD",
+    "indigo": "#4F5FA8",
+    "purple": "#7667A8",
+    "lavender": "#B7ACD5",
+    "blue_gray": "#9AAEC2",
+    "muted": "#C9D6E2",
+    "grid": "#EDF1F5",
+}
+
 RADAR_AXES = ["종합점수", "산업성", "성장성", "수요성"]
 
 # 차량 구성비에 쓰는 색 — 화물차만 진하게 해서 눈이 먼저 가게 한다
 COMPO_COLORS = {
-    "화물차": LINE,
-    "승용차": "#B9CEE4",
-    "승합차": "#D6E3EF",
-    "특수차": "#EDF2F7",
+    "화물": CHART_COLORS["deep_blue"],
+    "화물차": CHART_COLORS["deep_blue"],
+    "영업용": CHART_COLORS["deep_blue"],
+    "그 외 차량": CHART_COLORS["lavender"],
+    "자가용": CHART_COLORS["lavender"],
+    "승용차": CHART_COLORS["lavender"],
+    "승합차": CHART_COLORS["purple"],
+    "특수차": CHART_COLORS["blue_gray"],
 }
 
 # 유형별 지역 수에 쓰는 색
 TYPE_COLORS = {
-    "성장 중": LINE,
-    "미개척": GREEN,
-    "포화": AMBER,
-    "정체": POINT,
+    "정체": CHART_COLORS["blue_gray"],
+    "미개척": CHART_COLORS["lavender"],
+    "성장 중": CHART_COLORS["blue"],
+    "포화": CHART_COLORS["purple"],
 }
 
 # 세 축 그룹 막대 — 진한 순서로 산업성·성장성·수요성
@@ -195,7 +212,9 @@ def composition_bar(shares: dict[str, float], avg: dict[str, float] | None = Non
             texts.append(f"{pct:.1f}%" if pct >= 7 else "")
         fig.add_trace(go.Bar(
             x=xs, y=ys, name=cat, orientation="h",
-            marker=dict(color=COMPO_COLORS.get(cat, POINT),
+            marker=dict(color=COMPO_COLORS.get(
+                            cat, (CHART_COLORS["deep_blue"],
+                                  CHART_COLORS["lavender"])[cats.index(cat) % 2]),
                         line=dict(color="#fff", width=2)),
             text=texts, textposition="inside",
             insidetextfont=dict(size=11, color="#fff"),
@@ -229,7 +248,8 @@ def yoy_chart(df: pd.DataFrame, year_col: str = "연도",
 
     2026 년은 7월까지밖에 없으므로 호출하기 전에 세 해 모두
     1~7월 기준으로 잘라서 넘겨야 막대 높이 비교가 성립한다.
-    증가면 파랑, 감소면 빨강으로 칠해 감소 지역이 바로 걸러지게 했다.
+    첫 연도는 비교 기준이 없으므로 제외한다. 증가율은 브랜드 블루,
+    감소율은 저채도 퍼플로 표시하고 0% 기준선을 중심에 둔다.
     """
     if df is None or df.empty or value_col not in df:
         _empty("지역을 선택하면 표시됩니다", height)
@@ -239,29 +259,37 @@ def yoy_chart(df: pd.DataFrame, year_col: str = "연도",
     vals = d[value_col].astype(float)
     deltas = vals.pct_change() * 100
 
-    colors, texts = [], []
-    for dv in deltas:
-        if pd.isna(dv):
-            colors.append(POINT)
-            texts.append("기준")
-        else:
-            colors.append(LINE if dv >= 0 else RED)
-            texts.append(f"{dv:+.1f}%")
+    valid = deltas.notna()
+    years = d.loc[valid, year_col].astype(str)
+    changes = deltas.loc[valid]
+    if changes.empty:
+        _empty("증감률을 계산할 비교 연도가 없습니다", height)
+        return
+
+    colors = [CHART_COLORS["blue"] if dv >= 0 else CHART_COLORS["purple"]
+              for dv in changes]
+    texts = [f"{dv:+.1f}%" for dv in changes]
+    axis_limit = max(1.0, float(changes.abs().max()) * 1.35)
 
     fig = go.Figure(go.Bar(
-        x=d[year_col].astype(str), y=vals,
+        x=years, y=changes,
         marker=dict(color=colors),
         text=texts, textposition="outside",
         textfont=dict(size=11, color=MUTE),
         width=0.5,
-        hovertemplate="%{x}년<br>%{y:,.0f}대<extra></extra>",
+        hovertemplate="%{x}년<br>전년 대비 %{y:+.1f}%<extra></extra>",
     ))
 
     # type="category" 가 없으면 연도를 연속값으로 보고 2,022.5 눈금이 생긴다
     fig.update_xaxes(type="category", gridcolor="rgba(0,0,0,0)",
                      tickfont=dict(size=11))
-    fig.update_yaxes(gridcolor=GRID, zeroline=False, tickfont=dict(size=10),
-                     rangemode="tozero", range=[0, float(vals.max()) * 1.18])
+    fig.update_yaxes(
+        title_text="전년 대비 증감률(%)",
+        gridcolor=CHART_COLORS["grid"], zeroline=False,
+        tickfont=dict(size=10), title_font=dict(size=11, color=MUTE),
+        tickformat="+.1f", ticksuffix="%", range=[-axis_limit, axis_limit],
+    )
+    fig.add_hline(y=0, line=dict(color=CHART_COLORS["blue_gray"], width=1.5))
     _base(fig, height=height)
     st.plotly_chart(fig, use_container_width=True, key=key, config={"displayModeBar": False})
 
@@ -369,7 +397,7 @@ def quadrant_chart(df: pd.DataFrame, selected=None,
 def trend_chart(df: pd.DataFrame, x_col: str = "연월",
                 series: dict[str, str] | None = None,
                 secondary: bool = False, height: int = 300,
-                key: str | None = None) -> None:
+                key: str | None = None, data_palette: bool = False) -> None:
     """37개월 추이 꺾은선.
 
     series 예시: {"인구천명당_화물차": "선택 지역", "전국평균": "전국 평균"}
@@ -393,10 +421,19 @@ def trend_chart(df: pd.DataFrame, x_col: str = "연월",
 
     x = df[x_col].astype(str)
     fig = go.Figure()
+    primary_color = CHART_COLORS["indigo"] if data_palette else LINE
+    comparison_color = CHART_COLORS["blue_gray"] if data_palette else MUTE
+    hover_style = (
+        dict(bgcolor="#FFFFFF", bordercolor=CHART_COLORS["lavender"],
+             font=dict(color=INK))
+        if data_palette else None
+    )
 
     fig.add_trace(go.Scatter(
         x=x, y=df[cols[0]], mode="lines", name=series[cols[0]],
-        line=dict(color=LINE, width=2.4),
+        line=dict(color=primary_color, width=2.4),
+        marker=dict(color=primary_color),
+        hoverlabel=hover_style,
         hovertemplate="%{x}<br>%{y:,.1f}<extra></extra>",
     ))
 
@@ -404,7 +441,9 @@ def trend_chart(df: pd.DataFrame, x_col: str = "연월",
         trace_kw = {"yaxis": "y2"} if secondary else {}
         fig.add_trace(go.Scatter(
             x=x, y=df[cols[1]], mode="lines", name=series[cols[1]],
-            line=dict(color=MUTE, width=1.6, dash="dot"),
+            line=dict(color=comparison_color, width=1.6, dash="dot"),
+            marker=dict(color=comparison_color),
+            hoverlabel=hover_style,
             hovertemplate="%{x}<br>%{y:,.1f}<extra></extra>",
             **trace_kw,
         ))
@@ -417,7 +456,8 @@ def trend_chart(df: pd.DataFrame, x_col: str = "연월",
 
     fig.update_xaxes(gridcolor="rgba(0,0,0,0)", tickfont=dict(size=10),
                      nticks=8)
-    fig.update_yaxes(gridcolor=GRID, zeroline=False, tickfont=dict(size=10))
+    fig.update_yaxes(gridcolor=CHART_COLORS["grid"] if data_palette else GRID,
+                     zeroline=False, tickfont=dict(size=10))
     _base(fig, height=height, legend=len(cols) > 1)
     st.plotly_chart(fig, use_container_width=True, key=key, config={"displayModeBar": False})
 
@@ -498,9 +538,11 @@ def type_bar(counts: dict[str, int], selected: str | None = None,
     total = sum(values) or 1
 
     if selected is not None:
-        colors = [HIGHLIGHT if l == selected else POINT for l in labels]
+        colors = [CHART_COLORS["navy"] if l == selected
+                  else TYPE_COLORS.get(l, CHART_COLORS["muted"])
+                  for l in labels]
     else:
-        colors = [TYPE_COLORS.get(l, POINT) for l in labels]
+        colors = [TYPE_COLORS.get(l, CHART_COLORS["muted"]) for l in labels]
 
     fig = go.Figure(go.Bar(
         x=values, y=labels, orientation="h",
