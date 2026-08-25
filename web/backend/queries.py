@@ -61,6 +61,24 @@ def get_regions(db: MySQLDB) -> list[dict[str, Any]]:
     )
 
 
+def get_regions_by_province(
+    db: MySQLDB,
+    province_name: str,
+) -> list[dict[str, Any]]:
+    """실제 DB 시도명과 정확히 일치하는 지역 목록을 반환한다."""
+    province = province_name.strip() if isinstance(province_name, str) else ""
+    if not province:
+        raise ValueError("province_name은 비어 있지 않은 문자열이어야 합니다.")
+    # ETL이 '표준시도명 + 공백 + 시군구명'으로 저장하므로 첫 토큰을 정확히 비교한다.
+    return db.fetch_all(
+        """SELECT region_id AS region_code, region_name
+        FROM region
+        WHERE SUBSTRING_INDEX(region_name, ' ', 1) = %s
+        ORDER BY region_name, region_id""",
+        (province,),
+    )
+
+
 def get_region_count(db: MySQLDB) -> dict[str, Any]:
     """전체 분석 대상 지역 수를 {'region_count': int} 형태로 반환한다."""
     # COUNT(*)는 결과가 한 행이므로 fetch_one()을 사용한다.
@@ -135,6 +153,109 @@ def get_national_freight_count(
         (month, "화물"),
     )
     return _cast_int(row, "vehicle_count")
+
+
+def get_province_freight_counts(
+    db: MySQLDB,
+    year_month: str,
+) -> list[dict[str, Any]]:
+    """특정 월의 전국 화물차 등록대수를 DB 시도명 단위로 합산한다."""
+    month = _parse_year_month(year_month)
+    rows = db.fetch_all(
+        """SELECT SUBSTRING_INDEX(r.region_name, ' ', 1) AS province_name,
+                  SUM(v.vehicle_count) AS vehicle_count
+        FROM vehicle v
+        JOIN category c ON c.category_id = v.category_id
+        JOIN region r ON r.region_id = v.region_id
+        WHERE v.date_ym = %s AND c.category_main = %s
+        GROUP BY SUBSTRING_INDEX(r.region_name, ' ', 1)
+        ORDER BY province_name""",
+        (month, "화물"),
+    )
+    for row in rows:
+        row["vehicle_count"] = int(row["vehicle_count"])
+    return rows
+
+
+def get_national_freight_usage_counts(
+    db: MySQLDB,
+    year_month: str,
+) -> list[dict[str, Any]]:
+    """특정 월의 전국 화물차 등록대수를 용도별로 합산해 반환한다."""
+    month = _parse_year_month(year_month)
+    rows = db.fetch_all(
+        """SELECT DATE_FORMAT(v.date_ym, '%%Y-%%m') AS date,
+                  c.category_sub AS category_usage,
+                  SUM(v.vehicle_count) AS vehicle_count
+        FROM vehicle v
+        JOIN category c ON c.category_id = v.category_id
+        WHERE v.date_ym = %s AND c.category_main = %s
+        GROUP BY v.date_ym, c.category_sub
+        ORDER BY c.category_sub""",
+        (month, "화물"),
+    )
+    for row in rows:
+        row["vehicle_count"] = int(row["vehicle_count"])
+    return rows
+
+
+def get_national_freight_history(
+    db: MySQLDB,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> list[dict[str, Any]]:
+    """전국 화물차 월별 합계를 선택 기간 또는 전체 기간으로 반환한다."""
+    start, end = _parse_period(start_date, end_date)
+    conditions = ["c.category_main = %s"]
+    params: list[object] = ["화물"]
+    if start is not None:
+        conditions.append("v.date_ym >= %s")
+        params.append(start)
+    if end is not None:
+        conditions.append("v.date_ym <= %s")
+        params.append(end)
+
+    rows = db.fetch_all(
+        f"""SELECT DATE_FORMAT(v.date_ym, '%%Y-%%m') AS date,
+                   SUM(v.vehicle_count) AS vehicle_count
+        FROM vehicle v
+        JOIN category c ON c.category_id = v.category_id
+        WHERE {' AND '.join(conditions)}
+        GROUP BY v.date_ym
+        ORDER BY v.date_ym""",
+        tuple(params),
+    )
+    for row in rows:
+        row["vehicle_count"] = int(row["vehicle_count"])
+    return rows
+
+
+def get_top_region_freight_counts(
+    db: MySQLDB,
+    year_month: str,
+    limit: int = 10,
+) -> list[dict[str, Any]]:
+    """특정 월의 화물차 등록대수가 많은 지역을 내림차순으로 반환한다."""
+    month = _parse_year_month(year_month)
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+        raise ValueError("limit은 1 이상의 정수여야 합니다.")
+
+    rows = db.fetch_all(
+        """SELECT r.region_id AS region_code,
+                  r.region_name,
+                  SUM(v.vehicle_count) AS vehicle_count
+        FROM vehicle v
+        JOIN category c ON c.category_id = v.category_id
+        JOIN region r ON r.region_id = v.region_id
+        WHERE v.date_ym = %s AND c.category_main = %s
+        GROUP BY r.region_id, r.region_name
+        ORDER BY vehicle_count DESC, r.region_id
+        LIMIT %s""",
+        (month, "화물", limit),
+    )
+    for row in rows:
+        row["vehicle_count"] = int(row["vehicle_count"])
+    return rows
 
 
 def get_vehicle_category_counts(
@@ -291,6 +412,48 @@ def get_national_vehicle_metrics(
     return rows
 
 
+def get_national_commercial_freight_counts(
+    db: MySQLDB,
+    year_months: list[str],
+) -> list[dict[str, Any]]:
+    """여러 기준월의 지역별 영업용 화물차 등록대수를 반환한다."""
+    if not year_months:
+        return []
+
+    months = sorted({_parse_year_month(value, "year_months") for value in year_months})
+    placeholders = ", ".join(["%s"] * len(months))
+    rows = db.fetch_all(
+        f"""SELECT v.region_id AS region_code,
+                   DATE_FORMAT(v.date_ym, '%%Y-%%m') AS date,
+                   SUM(v.vehicle_count) AS commercial_truck_count
+        FROM vehicle v
+        JOIN category c ON c.category_id = v.category_id
+        WHERE v.date_ym IN ({placeholders})
+          AND c.category_main = %s
+          AND c.category_sub = %s
+        GROUP BY v.region_id, v.date_ym
+        ORDER BY v.region_id, v.date_ym""",
+        tuple([*months, "화물", "영업용"]),
+    )
+    for row in rows:
+        row["commercial_truck_count"] = int(row["commercial_truck_count"])
+    return rows
+
+
+def get_region_areas(db: MySQLDB) -> list[dict[str, Any]]:
+    """전체 분석 지역의 저장된 km² 면적을 반환한다."""
+    rows = db.fetch_all(
+        """SELECT region_id AS region_code, area_km2
+        FROM region
+        ORDER BY region_id"""
+    )
+    for row in rows:
+        row["area_km2"] = (
+            float(row["area_km2"]) if row.get("area_km2") is not None else None
+        )
+    return rows
+
+
 def get_national_population(
     db: MySQLDB,
     year_month: str,
@@ -306,6 +469,36 @@ def get_national_population(
         WHERE date_ym = %s
         ORDER BY region_id""",
         (month,),
+    )
+    for row in rows:
+        row["population"] = int(row["population"])
+    return rows
+
+
+def get_national_population_history(
+    db: MySQLDB,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> list[dict[str, Any]]:
+    """전국 모든 지역의 월별 인구를 선택 기간으로 반환한다."""
+    start, end = _parse_period(start_date, end_date)
+    conditions: list[str] = []
+    params: list[object] = []
+    if start is not None:
+        conditions.append("date_ym >= %s")
+        params.append(start)
+    if end is not None:
+        conditions.append("date_ym <= %s")
+        params.append(end)
+    where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+    rows = db.fetch_all(
+        f"""SELECT region_id AS region_code,
+                   DATE_FORMAT(date_ym, '%%Y-%%m') AS date,
+                   people_population AS population
+        FROM people
+        {where}
+        ORDER BY region_id, date_ym""",
+        tuple(params),
     )
     for row in rows:
         row["population"] = int(row["population"])

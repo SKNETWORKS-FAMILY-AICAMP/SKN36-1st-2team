@@ -1,43 +1,87 @@
+import base64
+
 import streamlit as st
-from ui.layout import setup
-from ui.layout import setup,html
-from ui.layout import footer
+from pymysql import MySQLError
+from ui.backend import get_db
+from ui.layout import IMG_DIR, footer, html, setup
+from web.backend import get_dashboard_summary
 # setup(page="main", active="서비스 소개", hero_gif="hero.gif")
 
 setup(page="main", active="서비스 소개",navpad=False)
 
-HERO = """
+TARGET_MONTH = "2026-07"
+
+
+@st.cache_data(ttl=3600)
+def load_dashboard_summary():
+    return get_dashboard_summary(get_db(), TARGET_MONTH)
+
+
+try:
+    dashboard = load_dashboard_summary()
+except (MySQLError, OSError, ValueError):
+    dashboard = {
+        "national_freight_count": None,
+        "year_over_year_growth_rate": None,
+        "region_count": None,
+    }
+
+
+def display_number(value, suffix="", decimals=0):
+    if value is None:
+        return "데이터 없음"
+    return f"{value:,.{decimals}f}{suffix}"
+
+
+freight_count = display_number(dashboard["national_freight_count"])
+growth_rate = display_number(dashboard["year_over_year_growth_rate"], "%", decimals=1)
+region_count = display_number(dashboard["region_count"])
+
+HERO = f"""
 <section class="wl-hero">
+<div class="routes" aria-hidden="true">
+<svg viewBox="0 0 1400 800" preserveAspectRatio="none">
+  <path class="dash" d="M0,600 Q350,300 700,500 T1400,350"
+        stroke="rgba(255,255,255,.30)" stroke-width="1.6" fill="none"/>
+  <path class="dash" d="M100,750 Q500,450 900,600 T1400,200"
+        stroke="rgba(127,178,240,.22)" stroke-width="1.4" fill="none"/>
+  <circle class="node" cx="700" cy="500" r="5" fill="#fff"/>
+  <circle class="node" cx="1100" cy="380" r="5" fill="#7FB2F0"/>
+  <circle class="node" cx="900" cy="600" r="4" fill="#fff" opacity=".8"/>
+</svg>
+</div>
 <div class="wl-hero-inner">
 
 <h1 class="wl-h1">
-데이터로 찾는<br>우리 회사의 다음 물류 거점
+거점을 정하는 데<br>
+필요한 건 감이 아니라 데이터
 </h1>
 
 <p class="wl-sub">
-전국 249개 시군구의 화물차&#183;인구 데이터를 분석해,
-기업이 어디에 거점을 두면 좋을지 알려드립니다.
+웨이로지는 전국 {region_count}개 시군구의 화물차 등록 데이터를 분석하는 물류 입지 분석 서비스입니다.<br>
+국토교통부 자동차등록현황과 주민등록 인구통계를 결합하여 산업성·성장성·수요성 기반의 물류 거점 적합도 지수를 산출합니다.<br>
+상권 분석 중심의 기존 서비스와 달리 화물 이동에 초점을 맞추어 기업의 거점 선정 의사결정을 지원합니다.
 </p>
 
 <div class="wl-cta-row">
-<a class="wl-btn wl-btn-primary" href="/유망지역_추천" target="_self">유망지역 추천 받기</a>
-<a class="wl-btn wl-btn-ghost"   href="/데이터_조회"   target="_self">데이터 먼저 보기</a>
+<a class="wl-btn wl-btn-primary" href="/recommend" target="_self">맞춤지역 추천 받기</a>
+<a class="wl-btn wl-btn-ghost"   href="/data_search" target="_self">데이터 먼저 보기</a>
 </div>
 
 <div class="wl-stats">
 <div class="wl-stat">
 <div class="wl-stat-l">전국 화물차 등록대수</div>
-<div class="wl-stat-n">3,612,480</div>
+<div class="wl-stat-n">{freight_count}</div>
 <div class="wl-stat-s">2026년 7월 기준</div>
 </div>
 <div class="wl-stat">
 <div class="wl-stat-l">전년 동월 대비 증가율</div>
-<div class="wl-stat-n">2.4%</div>
+<div class="wl-stat-n">{growth_rate}</div>
 <div class="wl-stat-s">2025.07 &#8594; 2026.07</div>
 </div>
 <div class="wl-stat">
 <div class="wl-stat-l">분석 대상 지역</div>
-<div class="wl-stat-n">249</div>
+<div class="wl-stat-n">{region_count}</div>
 <div class="wl-stat-s">시군구 단위 &#183; 37개월</div>
 </div>
 </div>
@@ -54,29 +98,9 @@ HERO = """
 
 st.markdown(HERO, unsafe_allow_html=True)
 
-# 지도 실루엣 위에 상위 지역이 점등되는 그림
-MAP_SVG = """
-<svg viewBox="0 0 300 380" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-<path d="M118 22 L150 14 L176 30 L188 58 L182 84 L196 104 L216 112 L226 136
-L218 160 L232 176 L228 202 L206 216 L212 240 L196 262 L200 286 L182 306
-L186 330 L164 344 L140 336 L126 316 L104 322 L84 306 L88 282 L70 264
-L78 240 L62 220 L72 196 L58 176 L70 152 L60 128 L76 104 L70 78 L88 56
-L96 32 Z"
-fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.22)" stroke-width="1.4"
-stroke-linejoin="round"/>
-<circle cx="128" cy="96"  r="9" fill="#4A90E2" opacity=".95"/>
-<circle cx="128" cy="96"  r="17" fill="none" stroke="#4A90E2" stroke-width="1.2" opacity=".45"/>
-<circle cx="152" cy="150" r="7" fill="#7FB2F0" opacity=".9"/>
-<circle cx="106" cy="176" r="6" fill="#7FB2F0" opacity=".75"/>
-<circle cx="172" cy="212" r="5" fill="#9BC4F2" opacity=".6"/>
-<circle cx="140" cy="256" r="5" fill="#9BC4F2" opacity=".55"/>
-<circle cx="96"  cy="240" r="4" fill="#9BC4F2" opacity=".45"/>
-<g stroke="rgba(122,178,240,.35)" stroke-width="1" stroke-dasharray="3 4">
-<path d="M128 96 L152 150"/><path d="M152 150 L106 176"/>
-<path d="M152 150 L172 212"/><path d="M172 212 L140 256"/>
-</g>
-</svg>
-"""
+REASON_IMAGE_B64 = base64.b64encode(
+    (IMG_DIR / "waylogi-reason.png").read_bytes()
+).decode()
 
 WHY = f"""
 <section class="wl-why">
@@ -94,7 +118,7 @@ WHY = f"""
             <div class="wl-why-h">창고가 아니라 지역 가능성을 봅니다</div>
             <div class="wl-why-d">
               부동산 매물은 지금 나와 있는 창고만 보여줍니다.
-              웨이로지는 249개 시군구의 차량 등록과 인구를 겹쳐,
+              웨이로지는 {region_count}개 시군구의 차량 등록과 인구를 겹쳐,
               <b>아직 창고가 없는 곳</b>까지 후보에 올립니다.
             </div>
           </div>
@@ -127,8 +151,9 @@ WHY = f"""
     </div>
 
     <div class="wl-why-visual">
-      {MAP_SVG}
-      <div class="wl-why-cap">2026.07 &#183; 종합점수 상위 지역</div>
+      <img class="wl-why-image"
+           src="data:image/png;base64,{REASON_IMAGE_B64}"
+           alt="기존 지역 조회 방식과 웨이로지 분석 방식을 비교한 설명 이미지"/>
     </div>
 
   </div>
@@ -199,7 +224,7 @@ FLOW = f"""
         <div class="wl-step-no">STEP 01</div>
         <div class="wl-step-h">지역 탐색</div>
         <div class="wl-step-d">
-          전국 249개 시군구가 지표별로 색칠된 지도에서
+          전국 {region_count}개 시군구가 지표별로 색칠된 지도에서
           어디가 짙은지 먼저 봅니다.
         </div>
         <div class="wl-step-fig">{FIG_MAP}</div>
@@ -207,7 +232,7 @@ FLOW = f"""
 
       <div class="wl-step">
         <div class="wl-step-no">STEP 02</div>
-        <div class="wl-step-h">진단 4문항</div>
+        <div class="wl-step-h">진단 5문항</div>
         <div class="wl-step-d">
           어떤 화물을 다루는지 답하면
           세 축의 가중치가 회사에 맞게 조정됩니다.
@@ -219,7 +244,7 @@ FLOW = f"""
         <div class="wl-step-no">STEP 03</div>
         <div class="wl-step-h">맞춤 순위</div>
         <div class="wl-step-d">
-          조정된 가중치로 249개 지역을 다시 계산해
+          조정된 가중치로 {region_count}개 지역을 다시 계산해
           상위 후보를 정렬합니다.
         </div>
         <div class="wl-step-fig">{FIG_RANK}</div>
@@ -243,7 +268,7 @@ FLOW = f"""
 
 html(FLOW)
 
-CONTACT = """
+CONTACT = f"""
 <section class="wl-contact">
   <div class="wl-contact-inner">
 
@@ -256,8 +281,8 @@ CONTACT = """
     </div>
 
     <div class="wl-contact-cta">
-      <a class="wl-btn wl-btn-primary" href="/문의" target="_self">문의 남기기</a>
-      <a class="wl-btn wl-btn-ghost-lt" href="/문의" target="_self">자주 묻는 질문</a>
+      <a class="wl-btn wl-btn-primary" href="/inquiry?view=inquiry" target="_self">문의 남기기</a>
+      <a class="wl-btn wl-btn-ghost-lt" href="/inquiry" target="_self">자주 묻는 질문</a>
     </div>
 
     <div class="wl-faq-peek">
@@ -279,7 +304,7 @@ CONTACT = """
         <div class="wl-faq-q-t">데이터는 언제까지인가요?</div>
         <div class="wl-faq-q-a">
           2023년 7월부터 2026년 7월까지 37개월,
-          전국 249개 시군구를 월 단위로 봅니다.
+          전국 {region_count}개 시군구를 월 단위로 봅니다.
         </div>
       </div>
     </div>
@@ -289,4 +314,4 @@ CONTACT = """
 """
 
 html(CONTACT)
-footer()  
+footer()

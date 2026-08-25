@@ -1,0 +1,515 @@
+/* ══ 데이터 조회 ═══════════════════════════════════
+   base.css 의 랜딩용 규칙(여백 0·스크롤 스냅)을 main.css 로
+   옮겼다면 !important 없이도 먹는다. 아직 base.css 에 남아
+   있다면 이 파일의 !important 가 이를 덮는다.
+
+   레이아웃
+     왼쪽(6)   지도 또는 근거 데이터
+     오른쪽(4) 순위 목록 또는 지역 요약
+   ═══════════════════════════════════════════════ */
+
+:root {
+  --wl-chart-navy: #14293D;
+  --wl-chart-deep-blue: #185FA5;
+  --wl-chart-blue: #378ADD;
+  --wl-chart-indigo: #4F5FA8;
+  --wl-chart-purple: #7667A8;
+  --wl-chart-lavender: #B7ACD5;
+  --wl-chart-blue-gray: #9AAEC2;
+  --wl-chart-muted: #C9D6E2;
+  --wl-chart-grid: #EDF1F5;
+}
+
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"] {
+  height: auto !important;
+  overflow-y: visible !important;
+  scroll-snap-type: none !important;
+  background: #FAFBFC !important;
+}
+
+[data-testid="stVerticalBlock"] { gap: .55rem !important; }
+
+.block-container,
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"] {
+  padding: calc(var(--nav-h) - 22px) clamp(16px, 2.4vw, 36px) 48px !important;
+  max-width: 1600px !important;
+  margin: 0 auto !important;
+}
+
+/* ── 위젯 ─────────────────────────────────────── */
+[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+[data-testid="stMultiSelect"] div[data-baseweb="select"] > div {
+  background: #F7F8FC;
+  border: 1px solid #DCE3EC;
+  border-radius: 6px;
+  font-size: 13.5px;
+  min-height: 40px;
+  transition: border-color .16s ease, background-color .16s ease,
+              box-shadow .16s ease;
+}
+[data-testid="stSelectbox"] div[data-baseweb="select"] > div:hover,
+[data-testid="stMultiSelect"] div[data-baseweb="select"] > div:hover {
+  background: #F6F5FF;
+  border-color: var(--wl-chart-lavender);
+}
+[data-testid="stSelectbox"] div[data-baseweb="select"] > div:focus-within,
+[data-testid="stMultiSelect"] div[data-baseweb="select"] > div:focus-within {
+  border-color: var(--wl-chart-indigo);
+  box-shadow: 0 0 0 1px rgba(79, 95, 168, .12);
+}
+[data-testid="stSlider"] { padding-top: 22px; }
+[data-testid="stSlider"] [data-rac]:has(> [data-testid="stSliderThumbValue"]) {
+  box-shadow: 0 0 0 1px rgba(44, 111, 181, .08);
+  transition: background-color .16s ease, box-shadow .16s ease;
+}
+[data-testid="stSlider"] [data-rac]:has(> [data-testid="stSliderThumbValue"]):hover,
+[data-testid="stSlider"] [data-rac]:has(> [data-testid="stSliderThumbValue"]):focus-within {
+  background: var(--wl-chart-indigo) !important;
+  box-shadow: 0 0 0 3px rgba(79, 95, 168, .12);
+}
+[data-testid="stSlider"] [data-testid="stSliderThumbValue"] p {
+  color: var(--wl-chart-indigo);
+}
+[data-testid="stSlider"] [data-testid="stSliderTickBar"] p {
+  color: #8B97A4;
+}
+[data-testid="stRadio"] { padding-top: 18px; }
+[data-testid="stRadio"] > div { gap: 18px; }
+
+/* ── 최초 데이터 로딩 안내 ────────────────────── */
+.wl-loading {
+  position: fixed;
+  inset: var(--nav-h) 0 0;
+  z-index: 990;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: #F8F8FC;
+}
+.wl-loading-logo {
+  width: 200px;
+  height: auto;
+  margin-bottom: 20px;
+}
+.wl-loading-title {
+  margin: 0 0 8px;
+  color: var(--wl-chart-indigo);
+  font-size: 18px;
+  font-weight: 700;
+}
+.wl-loading-sub {
+  margin: 0;
+  color: #6B7785;
+  font-size: 13px;
+  line-height: 1.7;
+}
+[data-testid="stAppViewContainer"]:has([data-testid="stException"]) .wl-loading {
+  display: none;
+}
+
+/* ── 결과 요약 한 줄 ──────────────────────────── */
+.wl-meta {
+  padding: 20px 4px 14px;
+  font-size: 13px; color: #6B7785;
+}
+.wl-meta b { color: #2C6FB5; }
+
+/* ── 지도 ─────────────────────────────────────── */
+iframe[title^="streamlit_folium"] {
+  background: #F2F5F8;
+  border: 1px solid #E3E8EE;
+  border-radius: 10px;
+}
+
+.wl-legend {
+  display: flex; align-items: center; gap: 5px;
+  padding: 12px 4px 0;
+  font-size: 12px; color: #6B7785;
+}
+.wl-legend > span:first-child {
+  font-weight: 600; color: #14293D; margin-right: 8px;
+}
+.wl-legend i {
+  width: 26px; height: 10px; border-radius: 2px; display: inline-block;
+}
+.wl-legend-min { margin-right: 3px; }
+.wl-legend-max { margin-left: 3px; }
+
+/* ══ 왼쪽 : 근거 데이터 ════════════════════════ */
+.wl-evidence-head {
+  font-size: 12.5px; font-weight: 700; color: #8B97A4;
+  padding: 4px 2px 14px;
+}
+
+.wl-evidence-group { margin-bottom: 20px; }
+
+.wl-evidence-title {
+  display: flex; align-items: baseline; gap: 9px;
+  font-size: 13.5px; font-weight: 600; color: #14293D;
+  margin-bottom: 10px;
+}
+.wl-evidence-title::before {
+  content: ""; width: 8px; height: 8px; border-radius: 50%;
+  background: #4A90E2; align-self: center;
+}
+.wl-cat-industry .wl-evidence-title::before { background: var(--wl-chart-deep-blue); }
+.wl-cat-growth   .wl-evidence-title::before { background: var(--wl-chart-indigo); }
+.wl-cat-demand   .wl-evidence-title::before { background: var(--wl-chart-purple); }
+
+.wl-evidence-title b { font-size: 16px; font-weight: 700; color: #14293D; }
+.wl-evidence-title em {
+  font-style: normal; font-size: 12px; color: #8B97A4;
+}
+
+.wl-evidence-grid {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
+}
+.wl-evidence-card {
+  background: #fff;
+  border: 1px solid #E3E8EE;
+  border-radius: 8px;
+  padding: 12px 13px;
+}
+.wl-evidence-label {
+  display: block; font-size: 11.5px; color: #8B97A4; margin-bottom: 5px;
+}
+.wl-evidence-value {
+  display: block; font-size: 16px; font-weight: 600; color: #14293D;
+  letter-spacing: -.02em;
+}
+.wl-evidence-rank {
+  display: inline-block; margin-top: 6px;
+  font-size: 11px; color: #A3AEB9;
+}
+.wl-evidence-rank.wl-top { color: #1E7A4C; font-weight: 600; }
+
+@media (max-width: 1400px) {
+  .wl-evidence-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ══ 오른쪽 : 패널 공통 ════════════════════════ */
+.wl-panel {
+  background: #FFFFFF;
+  border: 1px solid #DCE4EC;
+  border-radius: 10px;
+  padding: 24px;
+  min-height: 560px;
+}
+
+/* ── 지역 요약 ────────────────────────────────── */
+.wl-sum-head {
+  padding: 4px 2px 18px;
+}
+.wl-sum-sido { font-size: 12.5px; color: #8B97A4; margin-bottom: 3px; }
+.wl-sum-name {
+  margin: 0 0 12px;
+  font-size: 34px; font-weight: 700;
+  letter-spacing: -.035em; color: #14293D;
+}
+.wl-sum-tags {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+}
+.wl-tag {
+  display: inline-block; padding: 4px 12px; border-radius: 999px;
+  font-size: 12px; font-weight: 700;
+}
+.wl-tag.t0 { background: #E4F0FA; color: #1A5C99; }  /* 미개척 */
+.wl-tag.t1 { background: #E3F3EA; color: #1E7A4C; }  /* 성장 중 */
+.wl-tag.t2 { background: #FDF1E3; color: #97601C; }  /* 포화 */
+.wl-tag.t3 { background: #EFF1F4; color: #6B7785; }  /* 정체 */
+.wl-tag-out {
+  display: inline-block; padding: 4px 12px; border-radius: 999px;
+  font-size: 12px; color: #6B7785;
+  border: 1px solid #DDE4EB; background: #fff;
+}
+.wl-sum-typedesc {
+  margin: 0; font-size: 13px; line-height: 1.7;
+  color: #6B7785; word-break: keep-all;
+}
+
+/* 오른쪽 점수 패널 — 종합점수 · 세 축 · 해석을 세로로 */
+.wl-scorepanel {
+  display: flex; flex-direction: column; gap: 20px;
+}
+
+.wl-sum-total {
+  background: #F6F5FF;
+  border: 1px solid #DED8EE;
+  border-radius: 10px;
+  padding: 26px 20px;
+  text-align: center;
+}
+.wl-sum-total-label {
+  display: block; font-size: 12px; color: #6B7785; margin-bottom: 4px;
+}
+.wl-sum-total-value {
+  display: block; font-size: 44px; font-weight: 700;
+  color: var(--wl-chart-indigo); line-height: 1; letter-spacing: -.04em;
+}
+.wl-sum-total-rank {
+  display: block; font-size: 12.5px; color: var(--wl-chart-blue-gray); margin-top: 8px;
+}
+
+/* 세 축 가로 막대 */
+.wl-sbars {
+  display: flex; flex-direction: column; gap: 17px;
+  padding: 0 2px;
+}
+.wl-sbar-head {
+  display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px;
+}
+.wl-sbar-head span { font-size: 13px; color: #5A6B7C; flex: 1; }
+.wl-sbar-head b { font-size: 14.5px; font-weight: 700; color: #14293D; }
+.wl-sbar-head em {
+  font-style: normal; font-size: 11.5px; color: var(--wl-chart-blue-gray); min-width: 38px;
+  text-align: right;
+}
+.wl-sbar-track {
+  height: 7px; background: #E9EDF3; border-radius: 4px; overflow: hidden;
+}
+.wl-sbar-track i { display: block; height: 100%; border-radius: 4px; }
+.wl-sbar-track i.industry { background: var(--wl-chart-deep-blue); }
+.wl-sbar-track i.growth   { background: var(--wl-chart-indigo); }
+.wl-sbar-track i.demand   { background: var(--wl-chart-purple); }
+
+/* 해석 문장 */
+.wl-story {
+  list-style: none; margin: 0; padding: 18px 20px;
+  background: #F8F8FC;
+  border: 1px solid #E3DFEF;
+  border-left: 3px solid var(--wl-chart-purple);
+  border-radius: 0 10px 10px 0;
+  flex: 1;
+}
+.wl-story li {
+  font-size: 13.5px; line-height: 1.9; color: #4A5A6B;
+  word-break: keep-all;
+}
+.wl-story li + li { margin-top: 8px; }
+
+/* ── 순위 목록 (지역 선택 전) ─────────────────── */
+.wl-rank-head {
+  font-size: 12.5px; font-weight: 700; color: #8B97A4; margin-bottom: 8px;
+}
+.wl-rank { display: flex; flex-direction: column; }
+.wl-rank-panel {
+  box-sizing: border-box;
+  height: 560px;
+  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+}
+.wl-rank-panel .wl-rank {
+  flex: 1;
+  min-height: 0;
+}
+.wl-rank-row {
+  flex: 1;
+  display: grid; grid-template-columns: 24px 1fr 62px;
+  align-items: center; gap: 10px;
+  min-height: 0;
+  padding: 0; border-bottom: 1px solid #EDF1F5;
+  text-decoration: none !important;
+  color: inherit !important;
+}
+.wl-rank-row:last-child { border-bottom: none; }
+.wl-rank-no { font-size: 12px; font-weight: 700; color: #2C6FB5; }
+.wl-rank-name {
+  font-size: 13px; color: #14293D;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.wl-rank-row:nth-child(1) .wl-rank-name { font-size: 26px; font-weight: 700; color: #14293D; }
+.wl-rank-row:nth-child(1) .wl-rank-val  { font-size: 18px; color: #185FA5; }
+
+.wl-rank-row:nth-child(2) .wl-rank-name { font-size: 20px; font-weight: 600; color: #1B2C3D; }
+.wl-rank-row:nth-child(2) .wl-rank-val  { font-size: 15px; color: #3A4A5A; }
+
+.wl-rank-row:nth-child(3) .wl-rank-name { font-size: 17px; font-weight: 600; color: #2C3A48; }
+.wl-rank-row:nth-child(3) .wl-rank-val  { font-size: 14px; color: #4A5A6A; }
+
+.wl-rank-row:nth-child(4) .wl-rank-name { font-size: 15px; font-weight: 500; color: #3E4C5A; }
+.wl-rank-row:nth-child(5) .wl-rank-name { font-size: 14.5px; font-weight: 500; color: #4A5866; }
+.wl-rank-row:nth-child(n+6) .wl-rank-name { font-size: 13px; font-weight: 400; color: #5A6773; }
+
+.wl-rank-row:nth-child(n+4) .wl-rank-val { font-size: 12.5px; color: #6B7785; }
+
+/* hover 시 이름만 살짝 커지게 */
+.wl-rank-name {
+  display: inline-block;
+  transform-origin: left center;
+  transition: transform .15s ease;
+}
+.wl-rank-row:hover { background: #F7F9FC; }
+.wl-rank-row:hover .wl-rank-name { transform: scale(1.1); }
+
+
+.wl-rank-val {
+  font-size: 13px; font-weight: 700; color: #14293D; text-align: right;
+}
+
+/* ── 기타 ─────────────────────────────────────── */
+.wl-note {
+  background: #FFF7E8; border: 1px solid #F0DFB8;
+  border-radius: 6px; padding: 10px 14px;
+  font-size: 12.5px; color: #8A6D1B; margin-bottom: 16px;
+}
+
+.wl-panel-empty {
+  display: flex; align-items: center; justify-content: center;
+  text-align: center; color: #9AA6B2;
+  font-size: 13.5px; line-height: 1.9;
+}
+
+.wl-chart-ph {
+  background: #fff;
+  border: 1px dashed #D5DEE7; border-radius: 10px;
+  height: 280px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: #9AA6B2; font-size: 15px; font-weight: 600;
+  margin-top: 8px;
+}
+.wl-chart-ph span {
+  font-size: 12.5px; font-weight: 400; color: #B4BFC9; margin-top: 6px;
+}
+
+@media (max-width: 1100px) {
+  .wl-panel { min-height: 320px; }
+  .wl-rank-panel { height: auto; min-height: 560px; }
+  .wl-rank-panel .wl-rank-row { min-height: 48px; }
+}
+
+/* ── 그래프 제목 ──────────────────────────────── */
+.wl-chart-title {
+  font-size: 13px; font-weight: 600; color: #14293D;
+  padding: 14px 2px 8px;
+}
+
+
+
+
+
+
+/* =====================================================================================
+   상세보기(시군구 선택) 전용 스타일 — 기존 스타일시트 하단에 추가하세요.
+   색상은 기존 SHADES(["#E6F1FB","#B5D4F4","#85B7EB","#378ADD","#185FA5"]),
+   HIGHLIGHT("#FF7A45")와 동일한 팔레트를 재사용했습니다.
+   ===================================================================================== */
+
+/* 1) 히어로: 도넛 게이지(종합점수) + 3개 점수바 한 줄 */
+.wl-detail-hero {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 22px 28px;
+  border: 1px solid #DDE4EB;
+  border-radius: 12px;
+  margin: 16px 0;
+  background: #fff;
+}
+
+/* 순수 CSS 도넛 게이지 — 이미지1 스타일 참고, 라이브러리 없이 conic-gradient로 구현 */
+.wl-gauge {
+  --pct: 0;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: conic-gradient(#185FA5 calc(var(--pct) * 1%), #EFF2F5 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.wl-gauge::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  background: #fff;
+  border-radius: 50%;
+}
+.wl-gauge-value {
+  position: relative;
+  z-index: 1;
+  font-size: 20px;
+  font-weight: 700;
+  color: #14293D;
+}
+
+.wl-detail-hero-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 110px;
+  border-right: 1px solid #EFF2F5;
+  padding-right: 24px;
+}
+.wl-detail-hero-label { font-size: 12.5px; color: #8A94A6; }
+.wl-detail-hero-rank { font-size: 13px; color: #185FA5; font-weight: 600; margin-top: 4px; }
+
+.wl-detail-hero-bars { flex: 1; display: flex; gap: 24px; }
+.wl-hbar { flex: 1; }
+.wl-hbar-head { display: flex; align-items: baseline; gap: 6px; font-size: 12.5px; color: #58657A; margin-bottom: 6px; }
+.wl-hbar-head b { font-size: 15px; color: #14293D; }
+.wl-hbar-head em { font-style: normal; margin-left: auto; color: #8A94A6; }
+.wl-hbar-track { height: 8px; border-radius: 4px; background: #EFF2F5; overflow: hidden; }
+.wl-hbar-track i { display: block; height: 100%; border-radius: 4px; }
+.wl-hbar-track i.industry { background: #378ADD; }
+.wl-hbar-track i.growth   { background: #85B7EB; }
+.wl-hbar-track i.demand   { background: #185FA5; }
+
+/* 2) 인사이트 칩 */
+.wl-chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.wl-chip {
+  font-size: 12.5px;
+  color: #14293D;
+  background: #F5F8FB;
+  border: 1px solid #E6F1FB;
+  border-radius: 999px;
+  padding: 6px 14px;
+}
+
+/* 3) 근거지표: 카테고리 3개 가로 배치 */
+.wl-evidence-row { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 8px; }
+.wl-evidence-group {
+  flex: 1;
+  border: 1px solid #DDE4EB;
+  border-radius: 12px;
+  padding: 18px;
+  background: #fff;
+}
+.wl-evidence-title { display: flex; align-items: baseline; gap: 8px; margin-bottom: 14px; }
+.wl-evidence-title span { font-weight: 700; font-size: 14.5px; color: #14293D; }
+.wl-evidence-title b { font-size: 15px; }
+.wl-evidence-title em { font-style: normal; margin-left: auto; font-size: 12px; color: #8A94A6; }
+.wl-cat-industry .wl-evidence-title b { color: #378ADD; }
+.wl-cat-growth   .wl-evidence-title b { color: #85B7EB; }
+.wl-cat-demand   .wl-evidence-title b { color: #185FA5; }
+
+.wl-metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.wl-metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #F8FAFC;
+}
+.wl-metric-label { font-size: 11.5px; color: #8A94A6; }
+.wl-metric-value { font-size: 15px; color: #14293D; }
+.wl-metric-bar-track { height: 5px; border-radius: 3px; background: #EFF2F5; overflow: hidden; margin-top: 2px; }
+.wl-metric-bar-fill { height: 100%; border-radius: 3px; background: #B5D4F4; }
+.wl-metric-bar-fill.wl-top { background: #185FA5; }
+.wl-metric-rank { font-size: 11px; color: #A6AFBD; }
+
+/* 좁은 화면 대응 */
+@media (max-width: 1200px) {
+  .wl-evidence-row { flex-direction: column; }
+  .wl-detail-hero { flex-direction: column; align-items: stretch; gap: 20px; }
+  .wl-detail-hero-info { border-right: none; padding-right: 0; border-bottom: 1px solid #EFF2F5; padding-bottom: 16px; flex-direction: row; justify-content: space-between; align-items: center; }
+}
+

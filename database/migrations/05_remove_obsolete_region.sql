@@ -1,4 +1,5 @@
 -- 기존 Docker MySQL 볼륨에서 폐지 지역 R0167(충청북도 청원군)만 제거한다.
+-- 신규 seed에는 R0167이 없으므로, 해당 지역이 남은 기존 DB에서만 수동 실행한다.
 -- 원본 Excel, 다른 지역, category/date/admin/inquiry 데이터는 변경하지 않는다.
 USE logistics_db;
 

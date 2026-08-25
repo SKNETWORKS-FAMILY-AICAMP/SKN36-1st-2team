@@ -11,11 +11,10 @@ IMG_DIR = ROOT / "assets" / "img"
 
 NAV_LINKS = [
     ("서비스 소개",   "/"),
-    ("데이터 조회",   "/데이터_조회"),
-    ("유망지역 추천", "/유망지역_추천"),
-    ("FAQ · 문의",   "/문의"),
+    ("데이터 조회",   "/data_search"),
+    ("맞춤지역 추천", "/recommend"),
+    ("FAQ · 문의",   "/inquiry"),
 ]
-
 
 def html(s: str) -> None:
     """HTML 을 그린다. 마크다운이 4칸 이상 들여쓰기를 코드로 보므로 앞 공백을 제거한다."""
@@ -34,6 +33,17 @@ def _bg_var(gif: str | None) -> str:
     return f':root {{ --hero-gif: url("data:image/gif;base64,{b64}"); }}'
 
 
+@st.cache_data
+def load_logo_b64() -> str:
+    """로고 파일을 base64 로 인코딩해 캐시한다.
+
+    setup() 은 페이지를 옮길 때마다 매번 호출되므로, 캐시가 없으면
+    로고 파일을 매번 다시 읽고 인코딩한다. 로딩 화면에서도 같은
+    로고를 쓰기 위해 setup() 밖으로 뺐다.
+    """
+    return base64.b64encode((IMG_DIR / "waylogi.png").read_bytes()).decode()
+
+
 def setup(page: str = "", active: str = "",
           title: str = "WAYLOGI", hero_gif=None, navpad: bool = True) -> None:
     """페이지의 첫 Streamlit 호출이어야 한다.
@@ -44,13 +54,19 @@ def setup(page: str = "", active: str = "",
     """
     st.set_page_config(
         page_title=f"{title} | 물류 거점 예측 분석",
-        page_icon="▤",
+        page_icon=str(IMG_DIR / "waylogi-logo.png"),
         layout="wide",
         initial_sidebar_state="collapsed",
     )
 
-    # ── CSS : base + 페이지별 + 배경 변수 ──
+    # ── CSS : base + 공용 컴포넌트 + 페이지별 + 배경 변수 ──
+    # components.css 는 시군구 상세 패널처럼 여러 페이지에서 재사용할
+    # 컴포넌트 스타일을 모아둔 시트다. base.css 의 색상 토큰(--brand 등)을
+    # 그대로 참조하므로 반드시 base.css 다음, 페이지별 css 이전에 온다.
     css = (CSS_DIR / "base.css").read_text(encoding="utf-8")
+    components_css = CSS_DIR / "components.css"
+    if components_css.exists():
+        css += "\n" + components_css.read_text(encoding="utf-8")
     if page:
         css += "\n" + (CSS_DIR / f"{page}.css").read_text(encoding="utf-8")
     css += "\n" + _bg_var(hero_gif)
@@ -64,14 +80,12 @@ def setup(page: str = "", active: str = "",
         for label, href in NAV_LINKS
     )
 
+    logo_b64 = load_logo_b64()
     mark = (
         '<a class="wl-mark" href="/" target="_self">'
-        '<svg viewBox="0 0 40 34" width="30" height="26" aria-hidden="true">'
-        '<path d="M3 4 L11 27 L20 11 L29 27 L37 4" fill="none" '
-        'stroke="#2C6FB5" stroke-width="3.4" stroke-linecap="round" '
-        'stroke-linejoin="round"/>'
-        '<circle cx="20" cy="6" r="2.6" fill="#8FB8DC"/>'
-        '</svg><span>웨이로지</span></a>'
+        f'<img src="data:image/png;base64,{logo_b64}" class="wl-logo-img" '
+        'alt="웨이로지"/>'
+        '</a>'
     )
     pad = '<div class="wl-navpad"></div>' if navpad else ''
     st.markdown(
