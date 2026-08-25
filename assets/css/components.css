@@ -1,3 +1,23 @@
+/* ── 데이터 숫자 통일 ─────────────────────────── */
+div[data-testid="stMetricValue"] {
+  background: #F4F8FC;
+  border-radius: 8px;
+  padding: 10px 16px !important;
+  display: inline-block;
+
+  font-size: 34px !important;
+  font-weight: 800 !important;
+  color: #14293D !important;
+  letter-spacing: -0.9px;
+  line-height: 1.25 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 행 간격 통일 ─────────────────────────────── */
+div[data-testid="stHorizontalBlock"] + div[data-testid="stHorizontalBlock"] {
+  margin-top: 18px;
+}
+
 /* ── 검색 바 : 인구 슬라이더 정렬 ────────────────── */
 /* 슬라이더는 트랙 위에 min/max 숫자가 붙어 그만큼 아래로 밀린다.
    숫자는 남겨야 하므로 슬라이더를 올리는 대신

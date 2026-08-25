@@ -529,13 +529,13 @@ def render_row(
                 height=210, key=f"tr_{row['지역']}",
             )
     
-        with d2:
-            with st.container(border=True):
-                html(f'<div class="wl-chart-sub">전국 {region_count}개 지역 중 위치</div>')
-                charts.quadrant_chart(
-                    nationwide, selected=row["지역"], height=210,
-                    key=f"qd_{row['지역']}",
-                )
+    with d2:
+        with st.container(border=True):
+            html(f'<div class="wl-chart-sub">전국 {region_count}개 지역 중 위치</div>')
+            charts.quadrant_chart(
+                nationwide, selected=row["지역"], height=210,
+                key=f"qd_{row['지역']}",
+            )
 
 # ══ ② 유망지역 순위 ════════════════════════════════
 def render_result() -> None:

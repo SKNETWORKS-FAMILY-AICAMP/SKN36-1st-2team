@@ -11,15 +11,18 @@
   --paper:    #F6F7F5;
 
   /* 신뢰감 — 짙은 남색 계열 */
-  --navy:     #0B1B2B;   /* nav 바탕 */
+  --navy:     #C97F8B;   /* nav 바탕 */
   --brand:    #1B62C4;   /* 주요 액션 */
-  --brand-lt: #4A90E2;   /* 강조·호버 */
+  --brand-lt: #7FBBB3;   /* 강조·호버 */
   --sky:      #7FB2F0;   /* 보조 */
 
-  --hz-y:     #F2B705;
-  --hz-r:     #C8102E;
+  --hz-y:     #CBD5DC;
+  --hz-r:     #C97F8B;
   --mute:     #8B918E;
   --nav-h:    58px;
+
+  /* --ff: #2E6E92
+  --fgg : #7FBBB3 */
 }
 
 
