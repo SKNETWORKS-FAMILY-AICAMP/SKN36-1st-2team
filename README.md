@@ -301,8 +301,7 @@ SKN36-1st-2team/
 │       └── 전국_인구데이터_전처리완료.xlsx
 │
 ├── assets/
-│   ├── css/                            base · main · components · charts · explore · recommend · inquiry
-│   └── geo/                            지역 · 추이 참조 데이터
+│   └── css/                            base · main · components · charts · explore · recommend · inquiry
 │
 ├── docs/
 │   └── erd/                            ERD 이미지 · 원본
