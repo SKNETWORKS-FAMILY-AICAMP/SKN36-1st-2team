@@ -67,6 +67,7 @@ html, body, [class*="css"] {
   width: auto;
   height: 44px;
   object-fit: contain;
+  transform: translateY(3px);
 }
 
 .wl-navlinks {

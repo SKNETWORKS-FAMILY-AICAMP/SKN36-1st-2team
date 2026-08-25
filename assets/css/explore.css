@@ -91,7 +91,7 @@
   border-radius: 10px;
 }
 .wl-loading-logo {
-  width: 148px;
+  width: 200px;
   height: auto;
   margin-bottom: 20px;
 }
@@ -304,6 +304,32 @@ iframe[title^="streamlit_folium"] {
   font-size: 13px; color: #14293D;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+
+.wl-rank-row:nth-child(1) .wl-rank-name { font-size: 26px; font-weight: 700; color: #14293D; }
+.wl-rank-row:nth-child(1) .wl-rank-val  { font-size: 18px; color: #185FA5; }
+
+.wl-rank-row:nth-child(2) .wl-rank-name { font-size: 20px; font-weight: 600; color: #1B2C3D; }
+.wl-rank-row:nth-child(2) .wl-rank-val  { font-size: 15px; color: #3A4A5A; }
+
+.wl-rank-row:nth-child(3) .wl-rank-name { font-size: 17px; font-weight: 600; color: #2C3A48; }
+.wl-rank-row:nth-child(3) .wl-rank-val  { font-size: 14px; color: #4A5A6A; }
+
+.wl-rank-row:nth-child(4) .wl-rank-name { font-size: 15px; font-weight: 500; color: #3E4C5A; }
+.wl-rank-row:nth-child(5) .wl-rank-name { font-size: 14.5px; font-weight: 500; color: #4A5866; }
+.wl-rank-row:nth-child(n+6) .wl-rank-name { font-size: 13px; font-weight: 400; color: #5A6773; }
+
+.wl-rank-row:nth-child(n+4) .wl-rank-val { font-size: 12.5px; color: #6B7785; }
+
+/* hover 시 이름만 살짝 커지게 */
+.wl-rank-name {
+  display: inline-block;
+  transform-origin: left center;
+  transition: transform .15s ease;
+}
+.wl-rank-row:hover { background: #F7F9FC; }
+.wl-rank-row:hover .wl-rank-name { transform: scale(1.1); }
+
+
 .wl-rank-val {
   font-size: 13px; font-weight: 700; color: #14293D; text-align: right;
 }
