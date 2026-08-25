@@ -1,4 +1,7 @@
 """데이터 조회 — 기존 지도·상세 레이아웃에 MySQL backend 데이터를 연결한다."""
+from html import escape
+from urllib.parse import urlencode
+
 import streamlit as st
 from ui.layout import html, load_logo_b64, setup
 
@@ -184,6 +187,11 @@ def sgg_display_name(sido, geo_name):
     return geo_name
 
 for key, value in [("sido_select", "전체"), ("sgg_select", "전체")]: st.session_state.setdefault(key, value)
+qp = st.query_params
+if "sido" in qp and "sgg" in qp:
+    st.session_state.pending_sido = qp["sido"]
+    st.session_state.pending_sgg = qp["sgg"]
+    st.query_params.clear()
 if "pending_sido" in st.session_state:
     st.session_state.sido_select = st.session_state.pop("pending_sido"); st.session_state.sgg_select = "전체"
 if "pending_sgg" in st.session_state: st.session_state.sgg_select = st.session_state.pop("pending_sgg")
@@ -326,7 +334,14 @@ with col_right:
     if sel_row is not None: render_score(sel_row,sel_rank)
     elif scoped.empty: html('<div class="wl-panel wl-panel-empty">표시할 지역 데이터가 없습니다</div>')
     else:
-        rows="".join(f'<div class="wl-rank-row"><span class="wl-rank-no">{i}</span><span class="wl-rank-name">{r["시도"]} {r["시군구"]}</span><b class="wl-rank-val">{metric_fmt.format(r[metric_col])}</b></div>' for i,(_,r) in enumerate(scoped.head(14).iterrows(),1)); html(f'<div class="wl-panel"><div class="wl-rank-head">{scope_txt} &#183; {metric_label} 순</div><div class="wl-rank">{rows}</div></div>')
+        rows = "".join(
+            f'<a class="wl-rank-row" href="?{urlencode({"sido": str(r["시도"]), "sgg": str(r["시군구"])})}" target="_self">'
+            f'<span class="wl-rank-no">{i}</span>'
+            f'<span class="wl-rank-name">{escape(str(r["시도"]))} {escape(str(r["시군구"]))}</span>'
+            f'<b class="wl-rank-val">{escape(metric_fmt.format(r[metric_col]))}</b></a>'
+            for i, (_, r) in enumerate(scoped.head(10).iterrows(), 1)
+        )
+        html(f'<div class="wl-panel wl-rank-panel"><div class="wl-rank-head">{scope_txt} &#183; {metric_label} 순</div><div class="wl-rank">{rows}</div></div>')
 
 TYPES = ["미개척", "성장 중", "포화", "정체"]
 
