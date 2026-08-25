@@ -155,12 +155,19 @@
   position: relative;
   background: #1D4257;
   border-radius: 10px;
-  padding: 28px;
+  padding: 0px;
   aspect-ratio: 4 / 3.4;
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
 }
-.wl-why-visual svg { width: 100%; height: 100%; }
+.wl-why-visual svg,
+.wl-why-visual img.wl-why-img { 
+  width: 100%;  
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 10px; 
+}
 
 .wl-why-cap {
   position: absolute; left: 28px; bottom: 24px;

@@ -300,6 +300,8 @@ iframe[title^="streamlit_folium"] {
   display: grid; grid-template-columns: 24px 1fr 62px;
   align-items: center; gap: 10px;
   padding: 9px 0; border-bottom: 1px solid #EDF1F5;
+  text-decoration:none !important;
+  color: inherit !important;
 }
 .wl-rank-row:last-child { border-bottom: none; }
 .wl-rank-no { font-size: 12px; font-weight: 700; color: #2C6FB5; }

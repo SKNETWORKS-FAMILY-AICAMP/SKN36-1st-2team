@@ -8,7 +8,7 @@ loading_ph = st.empty()
 with loading_ph.container():
     html(f"""
     <div class="wl-loading">
-      <img src="data:image/png;base64,{load_logo_b64()}" class="wl-loading-logo" alt=""/>
+      <img src="data:image/png;base64,{load_logo_b64()}" style="style="width:200px; height:auto; display:block;" class="wl-loading-logo" alt=""/>
       <p class="wl-loading-title">전국 249개 지역을 계산하고 있습니다</p>
       <p class="wl-loading-sub">화물차 등록 현황과 인구 통계를 결합해<br>산업성 · 성장성 · 수요성 지수를 산출합니다</p>
     </div>
@@ -184,6 +184,12 @@ def sgg_display_name(sido, geo_name):
     return geo_name
 
 for key, value in [("sido_select", "전체"), ("sgg_select", "전체")]: st.session_state.setdefault(key, value)
+qp = st.query_params
+if "sgg" in qp:
+    st.session_state.pending_sido = qp["sido"]
+    st.session_state.pending_sgg = qp["sgg"]
+    st.query_params.clear()
+
 if "pending_sido" in st.session_state:
     st.session_state.sido_select = st.session_state.pop("pending_sido"); st.session_state.sgg_select = "전체"
 if "pending_sgg" in st.session_state: st.session_state.sgg_select = st.session_state.pop("pending_sgg")
@@ -326,7 +332,7 @@ with col_right:
     if sel_row is not None: render_score(sel_row,sel_rank)
     elif scoped.empty: html('<div class="wl-panel wl-panel-empty">표시할 지역 데이터가 없습니다</div>')
     else:
-        rows="".join(f'<div class="wl-rank-row"><span class="wl-rank-no">{i}</span><span class="wl-rank-name">{r["시도"]} {r["시군구"]}</span><b class="wl-rank-val">{metric_fmt.format(r[metric_col])}</b></div>' for i,(_,r) in enumerate(scoped.head(14).iterrows(),1)); html(f'<div class="wl-panel"><div class="wl-rank-head">{scope_txt} &#183; {metric_label} 순</div><div class="wl-rank">{rows}</div></div>')
+        rows="".join(f'<a class="wl-rank-row" href="?sido={r["시도"]}&sgg={r["시군구"]}" target="_self"><span class="wl-rank-no">{i}</span><span class="wl-rank-name">{r["시도"]} {r["시군구"]}</span><b class="wl-rank-val">{metric_fmt.format(r[metric_col])}</b></a>' for i,(_,r) in enumerate(scoped.head(14).iterrows(),1)); html(f'<div class="wl-panel"><div class="wl-rank-head">{scope_txt} &#183; {metric_label} 순</div><div class="wl-rank">{rows}</div></div>')
 
 TYPES = ["미개척", "성장 중", "포화", "정체"]
 
@@ -335,7 +341,7 @@ def ph(title, sub, height=320):
     html(f'<div class="wl-chart-ph" style="height:{height}px">{title}<span>{sub}</span></div>')
 
 
-level = "시군구" if sel_row is not None else ("시도" if sido != "전체" else "전국")
+level = "시군구" if sel_row is  not None else ("시도" if sido != "전체" else "전국")
 scope_name = sgg if level == "시군구" else (sido if level == "시도" else "전국")
 scope_df = passed[passed["시도"] == sido] if level == "시군구" else scoped
 if scope_df.empty:

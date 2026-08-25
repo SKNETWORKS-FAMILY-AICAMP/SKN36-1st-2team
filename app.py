@@ -5,6 +5,8 @@ from ui.layout import setup
 from ui.layout import setup,html
 from ui.layout import footer
 from web.backend import get_dashboard_summary
+import base64
+from ui.layout import IMG_DIR
 # setup(page="main", active="서비스 소개", hero_gif="hero.gif")
 
 setup(page="main", active="서비스 소개",navpad=False)
@@ -99,28 +101,9 @@ HERO = f"""
 st.markdown(HERO, unsafe_allow_html=True)
 
 # 지도 실루엣 위에 상위 지역이 점등되는 그림
-MAP_SVG = """
-<svg viewBox="0 0 300 380" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-<path d="M118 22 L150 14 L176 30 L188 58 L182 84 L196 104 L216 112 L226 136
-L218 160 L232 176 L228 202 L206 216 L212 240 L196 262 L200 286 L182 306
-L186 330 L164 344 L140 336 L126 316 L104 322 L84 306 L88 282 L70 264
-L78 240 L62 220 L72 196 L58 176 L70 152 L60 128 L76 104 L70 78 L88 56
-L96 32 Z"
-fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.22)" stroke-width="1.4"
-stroke-linejoin="round"/>
-<circle cx="128" cy="96"  r="9" fill="#4A90E2" opacity=".95"/>
-<circle cx="128" cy="96"  r="17" fill="none" stroke="#4A90E2" stroke-width="1.2" opacity=".45"/>
-<circle cx="152" cy="150" r="7" fill="#7FB2F0" opacity=".9"/>
-<circle cx="106" cy="176" r="6" fill="#7FB2F0" opacity=".75"/>
-<circle cx="172" cy="212" r="5" fill="#9BC4F2" opacity=".6"/>
-<circle cx="140" cy="256" r="5" fill="#9BC4F2" opacity=".55"/>
-<circle cx="96"  cy="240" r="4" fill="#9BC4F2" opacity=".45"/>
-<g stroke="rgba(122,178,240,.35)" stroke-width="1" stroke-dasharray="3 4">
-<path d="M128 96 L152 150"/><path d="M152 150 L106 176"/>
-<path d="M152 150 L172 212"/><path d="M172 212 L140 256"/>
-</g>
-</svg>
-"""
+reason_b64 = base64.b64encode((IMG_DIR / "waylogi-reason.png").read_bytes()).decode()
+WHY_VISUAL = f'<img src="data:image/png;base64,{reason_b64}" class="wl-why-img" alt="웨이로지 비교 이미지"/>'
+
 
 WHY = f"""
 <section class="wl-why">
@@ -171,8 +154,8 @@ WHY = f"""
     </div>
 
     <div class="wl-why-visual">
-      {MAP_SVG}
-      <div class="wl-why-cap">2026.07 &#183; 종합점수 상위 지역</div>
+      {WHY_VISUAL}
+      <div class="wl-why-cap"></div>
     </div>
 
   </div>
