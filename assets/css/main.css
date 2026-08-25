@@ -1,4 +1,4 @@
-/* ── 히어로 ── */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap');
 .wl-hero {
   position: relative;
   padding: clamp(48px, 9vh, 110px) clamp(24px, 5vw, 72px);
