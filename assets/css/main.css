@@ -153,25 +153,20 @@
 /* ── 오른쪽 시각 ── */
 .wl-why-visual {
   position: relative;
-  background: #1D4257;
   border-radius: 10px;
-  padding: 28px;
-  aspect-ratio: 4 / 3.4;
+  aspect-ratio: 1322 / 1190;
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
 }
-.wl-why-visual svg { width: 100%; height: 100%; }
-
-.wl-why-cap {
-  position: absolute; left: 28px; bottom: 24px;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11.5px; letter-spacing: .12em;
-  color: rgba(255,255,255,.55);
+.wl-why-image {
+  display: block;
+  width: 100%; height: 100%;
+  object-fit: contain;
 }
 
 @media (max-width: 1000px) {
   .wl-why-inner { grid-template-columns: 1fr; gap: 36px; }
-  .wl-why-visual { aspect-ratio: 4 / 3; order: -1; }
+  .wl-why-visual { order: -1; }
   .wl-why { min-height: auto; }
 }
 
