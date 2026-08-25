@@ -293,13 +293,28 @@ iframe[title^="streamlit_folium"] {
 
 /* ── 순위 목록 (지역 선택 전) ─────────────────── */
 .wl-rank-head {
-  font-size: 12.5px; font-weight: 700; color: #8B97A4; margin-bottom: 12px;
+  font-size: 12.5px; font-weight: 700; color: #8B97A4; margin-bottom: 8px;
 }
 .wl-rank { display: flex; flex-direction: column; }
+.wl-rank-panel {
+  box-sizing: border-box;
+  height: 560px;
+  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+}
+.wl-rank-panel .wl-rank {
+  flex: 1;
+  min-height: 0;
+}
 .wl-rank-row {
+  flex: 1;
   display: grid; grid-template-columns: 24px 1fr 62px;
   align-items: center; gap: 10px;
-  padding: 9px 0; border-bottom: 1px solid #EDF1F5;
+  min-height: 0;
+  padding: 0; border-bottom: 1px solid #EDF1F5;
+  text-decoration: none !important;
+  color: inherit !important;
 }
 .wl-rank-row:last-child { border-bottom: none; }
 .wl-rank-no { font-size: 12px; font-weight: 700; color: #2C6FB5; }
@@ -365,6 +380,8 @@ iframe[title^="streamlit_folium"] {
 
 @media (max-width: 1100px) {
   .wl-panel { min-height: 320px; }
+  .wl-rank-panel { height: auto; min-height: 560px; }
+  .wl-rank-panel .wl-rank-row { min-height: 48px; }
 }
 
 /* ── 그래프 제목 ──────────────────────────────── */
