@@ -17,8 +17,6 @@ with loading_ph.container():
     </div>
     """)
 
-# 최초 UI delta를 보낸 뒤 데이터·지도·차트 모듈을 불러온다.
-# 첫 실행에서 이 import들이 끝날 때까지 빈 화면이 보이는 것을 줄이기 위함이다.
 import admdongkor as adk
 import folium
 import pandas as pd
@@ -63,6 +61,14 @@ CATEGORY_CLASS = {"산업성": "industry", "성장성": "growth", "수요성": "
 SCORE_COL = {"산업성": "점수_산업성", "성장성": "점수_성장성", "수요성": "점수_수요성"}
 SHADES, DIMMED, HIGHLIGHT = ["#E6F1FB", "#B5D4F4", "#85B7EB", "#378ADD", "#185FA5"], "#EFF2F5", "#FF7A45"
 SIDO_ALIAS = {"전남광주통합특별시": ["전남광주통합특별시", "광주광역시", "전라남도"]}
+
+# 하단 근거지표 레이더에 쓰는 8개 축 — EVIDENCE_FIELDS 중 스케일이 안정적인 지표만 선별
+RADAR_FIELDS = [
+    ("입지계수 LQ", "LQ"), ("화물차 비율", "화물차비율"),
+    ("1천명당 화물차", "인구1천명당화물차"), ("디커플링", "디커플링"),
+    ("안정성", "안정성"), ("자체 인구", "인구수"),
+    ("인구 밀도", "인구밀도"), ("영업용 비중", "영업용비중"),
+]
 
 def split_region_name(name):
     sido, _, sgg = name.partition(" ")
@@ -215,7 +221,6 @@ with c3:
         placeholder="유형 전체", label_visibility="collapsed"
     )
 with c4:
-    # 원본의 slider 위치를 유지하고 실제 DB 자체 인구로 필터링한다.
     lo, hi = int(df["인구수"].min()), int(df["인구수"].max())
     html('<div class="wl-pop-filter-label">인구 배후</div>')
     pop = st.slider(
@@ -233,7 +238,10 @@ if sgg != "전체":
     hit = df[(df["시도"] == sido) & (df["시군구"] == sgg)]
     if not hit.empty: sel_row, sel_rank = hit.iloc[0], ranks.loc[hit.index[0]]
 scope_txt, denom = ("전국" if sido == "전체" else sido), (N if sido == "전체" else len(df[df["시도"] == sido]))
-html(f'<div class="wl-meta">{scope_txt} <b>{len(scoped)}개</b> / {denom}개 지역 &#183; 지도는 <b>{metric_label}</b> 기준 &#183; {TARGET_MONTH}</div>')
+
+# 시군구를 선택하면 지도/필터 메타 안내는 더 이상 의미가 없으므로 상세보기에서는 생략한다.
+if sel_row is None:
+    html(f'<div class="wl-meta">{scope_txt} <b>{len(scoped)}개</b> / {denom}개 지역 &#183; 지도는 <b>{metric_label}</b> 기준 &#183; {TARGET_MONTH}</div>')
 
 def story_lines(row):
     lines = []
@@ -244,45 +252,84 @@ def story_lines(row):
     if pd.notna(row["인구수"]): lines.append(f"기준월 자체 인구는 {row['인구수']:,.0f}명입니다.")
     return lines
 
-def render_evidence(row, rank_row):
+def render_head(row, total_rank, n):
+    """뒤로가기 + 지역명 타이틀."""
+    with st.container(key="detail_back_btn"):
+        if st.button("← 지도로", key="btn_back_to_map"):
+            st.session_state.pending_sgg = "전체"; st.rerun()
+    html(
+        f'<div class="wl-sum-head">'
+        f'<div class="wl-sum-sido">{row["시도"]}</div><h1 class="wl-sum-name">{row["시군구"]}</h1>'
+        f'<div class="wl-sum-tags">'
+        f'<span class="wl-tag-out">종합 전국 {total_rank}위 / {n}</span>'
+        f'</div></div>'
+    )
+
+def render_hero(row, rank_row, n):
+    """종합점수(도넛 게이지) + 3개 카테고리 점수바를 한 줄에 — 진입 즉시 전체 그림."""
+    bars = ""
+    for label, col, cls in [("산업성", "점수_산업성", "industry"), ("성장성", "점수_성장성", "growth"), ("수요성", "점수_수요성", "demand")]:
+        bars += (
+            f'<div class="wl-hbar">'
+            f'<div class="wl-hbar-head"><span>{label}</span><b>{row[col]:.1f}</b><em>{int(rank_row[col])}위</em></div>'
+            f'<div class="wl-hbar-track"><i class="{cls}" style="width:{row[col]}%"></i></div>'
+            f'</div>'
+        )
+    html(
+        f'<div class="wl-detail-hero">'
+        f'<div class="wl-gauge" style="--pct:{row["종합점수"]}">'
+        f'<span class="wl-gauge-value">{row["종합점수"]:.1f}</span>'
+        f'</div>'
+        f'<div class="wl-detail-hero-info">'
+        f'<span class="wl-detail-hero-label">종합점수</span>'
+        f'<span class="wl-detail-hero-rank">전국 {int(rank_row["종합점수"])}위 / {n}</span>'
+        f'</div>'
+        f'<div class="wl-detail-hero-bars">{bars}</div>'
+        f'</div>'
+    )
+
+def render_insight_chips(row):
+    """스토리 문장을 가로 알약 형태로 — 공간 최소, 핵심 즉시 전달."""
+    lines = story_lines(row)
+    if not lines:
+        return
+    chips = "".join(f'<span class="wl-chip">{line}</span>' for line in lines)
+    html(f'<div class="wl-chip-row">{chips}</div>')
+
+def render_evidence_grid(row, rank_row, n):
+    """카테고리 3개를 가로로. 지표마다 값 + 퍼센타일 바로 상대적 위치를 시각화."""
     groups = ""
     for category, fields in EVIDENCE_FIELDS.items():
-        col, cards = SCORE_COL[category], ""
+        score_col = SCORE_COL[category]
+        cards = ""
         for label, ev_col, fmt in fields:
             available = ev_col is not None and pd.notna(row[ev_col])
             if available:
                 rank = int(rank_row[ev_col])
-                top = "wl-top" if rank <= N * .2 else ""
+                percentile = max(0, min(100, (n - rank + 1) / n * 100))
+                top = "wl-top" if rank <= n * 0.2 else ""
                 value_text = fmt.format(row[ev_col])
                 rank_text = f"전국 {rank}위"
-                unavailable = ""
             else:
-                top = ""
-                value_text = "데이터 없음"
-                rank_text = "순위 없음"
-                unavailable = " wl-unavailable"
+                percentile, top = 0, ""
+                value_text, rank_text = "데이터 없음", "순위 없음"
             cards += (
-                f'<div class="wl-evidence-card{unavailable}">'
-                f'<span class="wl-evidence-label">{label}</span>'
-                f'<b class="wl-evidence-value">{value_text}</b>'
-                f'<span class="wl-evidence-rank {top}">{rank_text}</span>'
+                f'<div class="wl-metric-card">'
+                f'<span class="wl-metric-label">{label}</span>'
+                f'<b class="wl-metric-value">{value_text}</b>'
+                f'<div class="wl-metric-bar-track">'
+                f'<div class="wl-metric-bar-fill {top}" style="width:{percentile:.0f}%"></div>'
+                f'</div>'
+                f'<span class="wl-metric-rank">{rank_text}</span>'
                 f'</div>'
             )
-        groups += f'<div class="wl-evidence-group wl-cat-{CATEGORY_CLASS[category]}"><div class="wl-evidence-title"><span>{category}</span><b>{row[col]:.1f}</b><em>전국 {int(rank_row[col])}위 / {N}</em></div><div class="wl-evidence-grid">{cards}</div></div>'
-    html(groups)
-
-def render_head(row, total_rank):
-    with st.container(key="detail_back_btn"):
-        if st.button("← 지도로", key="btn_back_to_map"):
-            st.session_state.pending_sgg = "전체"; st.rerun()
-    html(f'<div class="wl-sum-head"><div class="wl-sum-sido">{row["시도"]}</div><h1 class="wl-sum-name">{row["시군구"]}</h1><div class="wl-sum-tags"><span class="wl-tag-out">종합 전국 {total_rank}위 / {N}</span><span class="wl-tag-out">DB 지역코드 {row["region_code"]}</span></div></div>')
-
-def render_score(row, rank_row):
-    bars = ""
-    for label, col, cls in [("산업성", "점수_산업성", "industry"), ("성장성", "점수_성장성", "growth"), ("수요성", "점수_수요성", "demand")]:
-        bars += f'<div class="wl-sbar"><div class="wl-sbar-head"><span>{label}</span><b>{row[col]:.1f}</b><em>{int(rank_row[col])}위</em></div><div class="wl-sbar-track"><i class="{cls}" style="width:{row[col]}%"></i></div></div>'
-    story = "".join(f"<li>{line}</li>" for line in story_lines(row))
-    html(f'<div class="wl-panel wl-scorepanel"><div class="wl-sum-total"><span class="wl-sum-total-label">종합점수</span><span class="wl-sum-total-value">{row["종합점수"]:.1f}</span><span class="wl-sum-total-rank">전국 {int(rank_row["종합점수"])}위 / {N}</span></div><div class="wl-sbars">{bars}</div><ul class="wl-story">{story}</ul></div>')
+        groups += (
+            f'<div class="wl-evidence-group wl-cat-{CATEGORY_CLASS[category]}">'
+            f'<div class="wl-evidence-title"><span>{category}</span><b>{row[score_col]:.1f}</b>'
+            f'<em>전국 {int(rank_row[score_col])}위 / {n}</em></div>'
+            f'<div class="wl-metric-grid">{cards}</div></div>'
+        )
+    html(f'<div class="wl-evidence-row">{groups}</div>')
 
 TOOLTIP_STYLE = "background:#fff; border:1px solid #DDE4EB; border-radius:6px;padding:8px 10px; font-family:sans-serif; font-size:12.5px;"
 def _shade(value, vmin, vmax):
@@ -321,34 +368,43 @@ def handle_click(out,sido_name):
         clicked=sgg_display_name(sido_name,props.get("sggnm",""))
         if clicked and clicked!=st.session_state.sgg_select: st.session_state.pending_sgg=clicked; st.rerun()
 
-col_left,col_right=st.columns([6,4],gap="medium")
-with col_left:
-    if sel_row is not None:
-        detail,score=load_selected_detail(sel_row["region_code"])
-        if detail["region"] is None or score is None: st.warning("선택 지역의 상세 데이터를 찾을 수 없습니다.")
-        render_head(sel_row,int(sel_rank["종합점수"])); render_evidence(sel_row,sel_rank)
-    else:
-        out=st_folium(build_map(sido),height=560,use_container_width=True,returned_objects=["last_active_drawing"]); handle_click(out,sido)
-        swatches="".join(f'<i style="background:{c}"></i>' for c in SHADES); html(f'<div class="wl-legend"><span>{metric_label}</span><span class="wl-legend-min">낮음</span>{swatches}<span class="wl-legend-max">높음</span></div>')
-with col_right:
-    if sel_row is not None: render_score(sel_row,sel_rank)
-    elif scoped.empty: html('<div class="wl-panel wl-panel-empty">표시할 지역 데이터가 없습니다</div>')
-    else:
-        rows = "".join(
-            f'<a class="wl-rank-row" href="?{urlencode({"sido": str(r["시도"]), "sgg": str(r["시군구"])})}" target="_self">'
-            f'<span class="wl-rank-no">{i}</span>'
-            f'<span class="wl-rank-name">{escape(str(r["시도"]))} {escape(str(r["시군구"]))}</span>'
-            f'<b class="wl-rank-val">{escape(metric_fmt.format(r[metric_col]))}</b></a>'
-            for i, (_, r) in enumerate(scoped.head(10).iterrows(), 1)
-        )
-        html(f'<div class="wl-panel wl-rank-panel"><div class="wl-rank-head">{scope_txt} &#183; {metric_label} 순</div><div class="wl-rank">{rows}</div></div>')
+# ---------------------------------------------------------------------------
+# 메인 레이아웃 분기
+# 시군구를 선택한 경우: 지도가 필요 없으므로 6:4 분할을 버리고 풀폭 상세보기로 전환.
+# 시군구 미선택(전국/시도만): 기존처럼 지도(6) + 랭킹(4) 유지.
+# ---------------------------------------------------------------------------
+if sel_row is not None:
+    detail, score = load_selected_detail(sel_row["region_code"])
+    if detail["region"] is None or score is None:
+        st.warning("선택 지역의 상세 데이터를 찾을 수 없습니다.")
+    render_head(sel_row, int(sel_rank["종합점수"]), N)
+    render_hero(sel_row, sel_rank, N)
+    render_insight_chips(sel_row)
+    render_evidence_grid(sel_row, sel_rank, N)
+else:
+    col_left, col_right = st.columns([6, 4], gap="medium")
+    with col_left:
+        out = st_folium(build_map(sido), height=560, use_container_width=True, returned_objects=["last_active_drawing"])
+        handle_click(out, sido)
+        swatches = "".join(f'<i style="background:{c}"></i>' for c in SHADES)
+        html(f'<div class="wl-legend"><span>{metric_label}</span><span class="wl-legend-min">낮음</span>{swatches}<span class="wl-legend-max">높음</span></div>')
+    with col_right:
+        if scoped.empty:
+            html('<div class="wl-panel wl-panel-empty">표시할 지역 데이터가 없습니다</div>')
+        else:
+            rows = "".join(
+                f'<a class="wl-rank-row" href="?{urlencode({"sido": str(r["시도"]), "sgg": str(r["시군구"])})}" target="_self">'
+                f'<span class="wl-rank-no">{i}</span>'
+                f'<span class="wl-rank-name">{escape(str(r["시도"]))} {escape(str(r["시군구"]))}</span>'
+                f'<b class="wl-rank-val">{escape(metric_fmt.format(r[metric_col]))}</b></a>'
+                for i, (_, r) in enumerate(scoped.head(10).iterrows(), 1)
+            )
+            html(f'<div class="wl-panel wl-rank-panel"><div class="wl-rank-head">{scope_txt} &#183; {metric_label} 순</div><div class="wl-rank">{rows}</div></div>')
 
 TYPES = ["미개척", "성장 중", "포화", "정체"]
 
-
 def ph(title, sub, height=320):
     html(f'<div class="wl-chart-ph" style="height:{height}px">{title}<span>{sub}</span></div>')
-
 
 level = "시군구" if sel_row is not None else ("시도" if sido != "전체" else "전국")
 scope_name = sgg if level == "시군구" else (sido if level == "시도" else "전국")
@@ -356,35 +412,19 @@ scope_df = passed[passed["시도"] == sido] if level == "시군구" else scoped
 if scope_df.empty:
     scope_df = df if level == "전국" else df[df["시도"] == sido]
 
-mode = st.radio(
-    "보기", ["이대로 보기", "전국 평균과 비교"], horizontal=True,
-    label_visibility="collapsed", disabled=(level == "전국"),
-)
-compare = mode == "전국 평균과 비교" and level != "전국"
-html(f'<div class="wl-chart-title">{scope_name} &#183; 상세 분석</div>')
-
+# 시군구 상세는 이미 히어로+근거지표에서 종합점수·화물차비율·인구 등을 전부 보여줬으므로
+# 아래 차트 섹션 제목도 "요약 지표"가 아니라 "추이·구성" 성격임을 분명히 한다.
+chart_title = "차량 구성 · 추이" if level == "시군구" else f"{scope_name} · 상세 분석"
+html(f'<div class="wl-chart-title">{chart_title}</div>')
 
 def build_metrics():
-    if level == "시군구":
-        row = sel_row
-        per_k = row["화물차"] / row["인구수"] * 1000 if row["인구수"] else 0
-        nat_per_k = (df["화물차"].sum() / df["인구수"].sum() * 1000)
+    """전국/시도 스코프 요약 KPI. 시군구는 위 히어로+근거지표와 중복이라 호출하지 않는다.
 
-        def delta(col):
-            return f'{row[col] - df[col].mean():+.1f}' if compare else None
-
-        return [
-            {"label": "종합점수", "value": f'{row["종합점수"]:.1f}',
-             "delta": delta("종합점수"), "help": f'전국 {int(sel_rank["종합점수"])}위 / {N}'},
-            {"label": "화물차 비율", "value": f'{row["화물차비율"]:.1f}%',
-             "delta": delta("화물차비율")},
-            {"label": "인구 1천명당 화물차", "value": f"{per_k:,.1f}대",
-             "delta": f"{per_k - nat_per_k:+.1f}" if compare else None},
-            {"label": "자체 인구", "value": f'{row["인구수"] / 10000:,.1f}만'},
-        ]
-
+    라디오 버튼을 없앤 뒤로는 전국이 아닌 모든 스코프에서 항상 전국 평균 대비
+    delta 를 함께 보여준다.
+    """
     def avg_delta(col):
-        return f'{scope_df[col].mean() - df[col].mean():+.1f}' if compare else None
+        return f'{scope_df[col].mean() - df[col].mean():+.1f}' if level != "전국" else None
 
     return [
         {"label": "지역 수", "value": f"{len(scope_df):,}개"},
@@ -395,75 +435,109 @@ def build_metrics():
         {"label": "화물차 합계", "value": f'{scope_df["화물차"].sum():,.0f}대'},
     ]
 
+def build_radar_values(row, rank_row, n):
+    """근거지표 8개를 전국 percentile(0~100)로 변환 — 단위가 달라 원값을 그대로 못 쓴다."""
+    values = {}
+    for label, col in RADAR_FIELDS:
+        if pd.notna(row[col]):
+            rank = int(rank_row[col])
+            values[label] = max(0, min(100, (n - rank + 1) / n * 100))
+    return values
 
-charts.metric_row(build_metrics())
+def build_compare_df():
+    """시도/시군구 스코프에서 산업성·성장성·수요성 그룹 막대용 비교 데이터.
+
+    시군구는 [해당 지역, 소속 시도 평균, 전국 평균] 3행,
+    시도는 [해당 시도 평균, 전국 평균] 2행을 만든다.
+    """
+    cols = ["점수_산업성", "점수_성장성", "점수_수요성"]
+    if level == "시군구":
+        province_df = df[df["시도"] == sido]
+        rows = [
+            {"지역": sel_row["시군구"], **{c: sel_row[c] for c in cols}},
+            {"지역": f"{sido} 평균", **{c: province_df[c].mean() for c in cols}},
+            {"지역": "전국 평균", **{c: df[c].mean() for c in cols}},
+        ]
+        return pd.DataFrame(rows), sel_row["시군구"]
+    rows = [
+        {"지역": scope_name, **{c: scope_df[c].mean() for c in cols}},
+        {"지역": "전국 평균", **{c: df[c].mean() for c in cols}},
+    ]
+    return pd.DataFrame(rows), scope_name
+
+# 시군구 상세에서는 히어로+근거지표가 이미 요약을 다 보여줬으므로 중복 KPI 줄을 생략한다.
+if level != "시군구":
+    charts.metric_row(build_metrics())
 
 detail = None
 if sel_row is not None:
     detail, _ = load_selected_detail(sel_row["region_code"])
 
-a1, a2 = st.columns(2, gap="medium")
-with a1:
-    with st.container(border=True):
-        html('<div class="wl-chart-sub">차량 구성비</div>')
-        if level == "시군구" and detail:
-            category_df = pd.DataFrame(detail["vehicle_categories"])
-            if category_df.empty:
-                ph("차량 구성비", "기준월 카테고리 데이터 없음")
+with st.container(key="chart_grid_narrow"):
+    a1, a2 = st.columns(2, gap="medium")
+    with a1:
+        with st.container(border=True):
+            html('<div class="wl-chart-sub">차량 구성비</div>')
+            if level == "시군구" and detail:
+                category_df = pd.DataFrame(detail["vehicle_categories"])
+                if category_df.empty:
+                    ph("차량 구성비", "기준월 카테고리 데이터 없음")
+                else:
+                    shares = category_df.groupby("category_main")["vehicle_count"].sum().to_dict()
+                    national_freight = df["화물차"].sum() / df["차량총"].sum() * 100
+                    avg = {"화물": national_freight, "그 외 차량": 100 - national_freight}
+                    charts.composition_bar(shares, avg=avg, label=sgg, key="compo")
             else:
-                shares = category_df.groupby("category_main")["vehicle_count"].sum().to_dict()
+                freight = scope_df["화물차"].sum() / scope_df["차량총"].sum() * 100
                 national_freight = df["화물차"].sum() / df["차량총"].sum() * 100
-                avg = {"화물": national_freight, "그 외 차량": 100 - national_freight}
-                charts.composition_bar(shares, avg=avg if compare else None, label=sgg, key="compo")
-        else:
-            freight = scope_df["화물차"].sum() / scope_df["차량총"].sum() * 100
-            national_freight = df["화물차"].sum() / df["차량총"].sum() * 100
-            charts.composition_bar(
-                {"화물": freight, "그 외 차량": 100 - freight},
-                avg={"화물": national_freight, "그 외 차량": 100 - national_freight} if compare else None,
-                label=f"{scope_name} 합계", key="compo",
+                charts.composition_bar(
+                    {"화물": freight, "그 외 차량": 100 - freight},
+                    avg={"화물": national_freight, "그 외 차량": 100 - national_freight},
+                    label=f"{scope_name} 합계", key="compo",
+                )
+
+    with a2:
+        with st.container(border=True):
+            if level == "전국":
+                html('<div class="wl-chart-sub">유형별 지역 수</div>')
+                counts = scope_df["유형"].value_counts()
+                charts.type_bar(
+                    {name: int(counts.get(name, 0)) for name in TYPES}, key="typebar",
+                )
+            else:
+                html('<div class="wl-chart-sub">산업성 · 성장성 · 수요성 비교</div>')
+                compare_df, highlight = build_compare_df()
+                charts.group_bar(compare_df, name_col="지역", selected=highlight, key="groupbar")
+
+    b1, b2 = st.columns(2, gap="medium")
+    freight_trend = load_freight_trend(
+        code=sel_row["region_code"] if sel_row is not None else None,
+        province=sido if level == "시도" else None,
+    )
+    with b1:
+        with st.container(border=True):
+            if level == "시군구":
+                html('<div class="wl-chart-sub">근거지표 프로파일</div>')
+                radar_values = build_radar_values(sel_row, sel_rank, N)
+                charts.evidence_radar_chart(radar_values, key="evidence_radar")
+            else:
+                html('<div class="wl-chart-sub">화물차 전년 대비 증감률</div>')
+                if freight_trend.empty:
+                    ph("연도별 증감", "월별 화물차 데이터 없음")
+                else:
+                    yearly = freight_trend.copy()
+                    yearly["연도"] = yearly["연월"].str[:4]
+                    yearly["월"] = yearly["연월"].str[5:7].astype(int)
+                    cutoff = int(TARGET_MONTH[-2:])
+                    yearly = yearly[yearly["월"] == cutoff][["연도", "화물차수"]]
+                    charts.yoy_chart(yearly, key="yoy")
+    with b2:
+        with st.container(border=True):
+            html('<div class="wl-chart-sub">인구 1천명당 화물차 · 37개월</div>')
+            series = {"인구천명당_화물차": scope_name, "전국평균": "전국 평균"}
+            charts.trend_chart(
+                freight_trend, x_col="연월", series=series, key="trend",
+                data_palette=True,
             )
 
-with a2:
-    with st.container(border=True):
-        sub = "유형별 지역 수" if level != "시군구" else f"{sido} 유형 분포"
-        html(f'<div class="wl-chart-sub">{sub}</div>')
-        counts = scope_df["유형"].value_counts()
-        charts.type_bar(
-            {name: int(counts.get(name, 0)) for name in TYPES},
-            selected=sel_row["유형"] if level == "시군구" else None,
-            key="typebar",
-        )
-
-b1, b2 = st.columns(2, gap="medium")
-freight_trend = load_freight_trend(
-    code=sel_row["region_code"] if sel_row is not None else None,
-    province=sido if level == "시도" else None,
-)
-with b1:
-    with st.container(border=True):
-        html('<div class="wl-chart-sub">화물차 전년 대비 증감률</div>')
-        if freight_trend.empty:
-            ph("연도별 증감", "월별 화물차 데이터 없음")
-        else:
-            yearly = freight_trend.copy()
-            yearly["연도"] = yearly["연월"].str[:4]
-            yearly["월"] = yearly["연월"].str[5:7].astype(int)
-            cutoff = int(TARGET_MONTH[-2:])
-            # 등록대수는 흐름량이 아닌 월말 재고이므로 합산하지 않고
-            # 각 연도의 동일 기준월(7월) 스냅샷끼리 비교한다.
-            yearly = yearly[yearly["월"] == cutoff][["연도", "화물차수"]]
-            charts.yoy_chart(yearly, key="yoy")
-with b2:
-    with st.container(border=True):
-        html('<div class="wl-chart-sub">인구 1천명당 화물차 · 37개월</div>')
-        series = {"인구천명당_화물차": scope_name}
-        if compare:
-            series["전국평균"] = "전국 평균"
-        charts.trend_chart(
-            freight_trend, x_col="연월", series=series, key="trend",
-            data_palette=True,
-        )
-
-# 실제 데이터 화면의 마지막 차트까지 렌더링한 뒤 overlay를 제거한다.
 loading_ph.empty()

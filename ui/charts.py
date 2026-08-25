@@ -661,3 +661,59 @@ def group_bar(data: pd.DataFrame, name_col: str = "지역",
     fig.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.08,
                                   xanchor="center", x=0.5))
     st.plotly_chart(fig, use_container_width=True, key=key, config={"displayModeBar": False})
+
+
+# ── 근거지표 레이더 (시군구 상세 전용) ──────────────
+EVIDENCE_RADAR_AXES = [
+    "입지계수 LQ", "화물차 비율", "1천명당 화물차", "디커플링",
+    "안정성", "자체 인구", "인구 밀도", "영업용 비중",
+]
+
+def evidence_radar_chart(values: dict[str, float], height: int = 320,
+                         key: str | None = None) -> None:
+    """근거지표 8개를 전국 percentile(0~100)로 정규화해 레이더로 그린다.
+
+    values 예시: {"입지계수 LQ": 82.4, "화물차 비율": 76.1, ...}
+    단위가 서로 다른 지표(명·%·계수)를 한 도형에 겹쳐야 하므로
+    원값이 아니라 반드시 percentile로 변환해서 넘겨야 한다.
+
+    percentile 기준에서 전국 중앙값은 정의상 항상 50이므로
+    별도 평균 데이터 없이 상수 점선으로 그린다.
+    """
+    if not values:
+        _empty("지역을 선택하면 표시됩니다", height)
+        return
+
+    missing = [a for a in EVIDENCE_RADAR_AXES if a not in values]
+    if missing:
+        st.warning(f"레이더 차트에 필요한 값이 없습니다: {', '.join(missing)}")
+        return
+
+    axes = EVIDENCE_RADAR_AXES + [EVIDENCE_RADAR_AXES[0]]
+    fig = go.Figure()
+
+    median_line = [50] * len(EVIDENCE_RADAR_AXES)
+    median_line.append(median_line[0])
+    fig.add_trace(go.Scatterpolar(
+        r=median_line, theta=axes, fill=None, name="전국 중앙값",
+        line=dict(color=MUTE, width=1.5, dash="dot"),
+        hovertemplate="전국 중앙값<extra></extra>",
+    ))
+
+    vals = [values[a] for a in EVIDENCE_RADAR_AXES]
+    vals.append(vals[0])
+    fig.add_trace(go.Scatterpolar(
+        r=vals, theta=axes, fill="toself", name="선택 지역",
+        fillcolor=FILL, line=dict(color=LINE, width=2),
+        hovertemplate="%{theta}: 상위 %{r:.0f}%<extra></extra>",
+    ))
+
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(visible=True, range=[0, 100], tickfont=dict(size=10)),
+            angularaxis=dict(tickfont=dict(size=11)),
+        ),
+    )
+    _base(fig, height=height, legend=True)
+    st.plotly_chart(fig, use_container_width=True, key=key,
+                    config={"displayModeBar": False})

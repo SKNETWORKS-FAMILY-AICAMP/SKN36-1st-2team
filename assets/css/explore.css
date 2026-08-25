@@ -389,3 +389,127 @@ iframe[title^="streamlit_folium"] {
   font-size: 13px; font-weight: 600; color: #14293D;
   padding: 14px 2px 8px;
 }
+
+
+
+
+
+
+/* =====================================================================================
+   상세보기(시군구 선택) 전용 스타일 — 기존 스타일시트 하단에 추가하세요.
+   색상은 기존 SHADES(["#E6F1FB","#B5D4F4","#85B7EB","#378ADD","#185FA5"]),
+   HIGHLIGHT("#FF7A45")와 동일한 팔레트를 재사용했습니다.
+   ===================================================================================== */
+
+/* 1) 히어로: 도넛 게이지(종합점수) + 3개 점수바 한 줄 */
+.wl-detail-hero {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 22px 28px;
+  border: 1px solid #DDE4EB;
+  border-radius: 12px;
+  margin: 16px 0;
+  background: #fff;
+}
+
+/* 순수 CSS 도넛 게이지 — 이미지1 스타일 참고, 라이브러리 없이 conic-gradient로 구현 */
+.wl-gauge {
+  --pct: 0;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: conic-gradient(#185FA5 calc(var(--pct) * 1%), #EFF2F5 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.wl-gauge::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  background: #fff;
+  border-radius: 50%;
+}
+.wl-gauge-value {
+  position: relative;
+  z-index: 1;
+  font-size: 20px;
+  font-weight: 700;
+  color: #14293D;
+}
+
+.wl-detail-hero-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 110px;
+  border-right: 1px solid #EFF2F5;
+  padding-right: 24px;
+}
+.wl-detail-hero-label { font-size: 12.5px; color: #8A94A6; }
+.wl-detail-hero-rank { font-size: 13px; color: #185FA5; font-weight: 600; margin-top: 4px; }
+
+.wl-detail-hero-bars { flex: 1; display: flex; gap: 24px; }
+.wl-hbar { flex: 1; }
+.wl-hbar-head { display: flex; align-items: baseline; gap: 6px; font-size: 12.5px; color: #58657A; margin-bottom: 6px; }
+.wl-hbar-head b { font-size: 15px; color: #14293D; }
+.wl-hbar-head em { font-style: normal; margin-left: auto; color: #8A94A6; }
+.wl-hbar-track { height: 8px; border-radius: 4px; background: #EFF2F5; overflow: hidden; }
+.wl-hbar-track i { display: block; height: 100%; border-radius: 4px; }
+.wl-hbar-track i.industry { background: #378ADD; }
+.wl-hbar-track i.growth   { background: #85B7EB; }
+.wl-hbar-track i.demand   { background: #185FA5; }
+
+/* 2) 인사이트 칩 */
+.wl-chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.wl-chip {
+  font-size: 12.5px;
+  color: #14293D;
+  background: #F5F8FB;
+  border: 1px solid #E6F1FB;
+  border-radius: 999px;
+  padding: 6px 14px;
+}
+
+/* 3) 근거지표: 카테고리 3개 가로 배치 */
+.wl-evidence-row { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 8px; }
+.wl-evidence-group {
+  flex: 1;
+  border: 1px solid #DDE4EB;
+  border-radius: 12px;
+  padding: 18px;
+  background: #fff;
+}
+.wl-evidence-title { display: flex; align-items: baseline; gap: 8px; margin-bottom: 14px; }
+.wl-evidence-title span { font-weight: 700; font-size: 14.5px; color: #14293D; }
+.wl-evidence-title b { font-size: 15px; }
+.wl-evidence-title em { font-style: normal; margin-left: auto; font-size: 12px; color: #8A94A6; }
+.wl-cat-industry .wl-evidence-title b { color: #378ADD; }
+.wl-cat-growth   .wl-evidence-title b { color: #85B7EB; }
+.wl-cat-demand   .wl-evidence-title b { color: #185FA5; }
+
+.wl-metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.wl-metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #F8FAFC;
+}
+.wl-metric-label { font-size: 11.5px; color: #8A94A6; }
+.wl-metric-value { font-size: 15px; color: #14293D; }
+.wl-metric-bar-track { height: 5px; border-radius: 3px; background: #EFF2F5; overflow: hidden; margin-top: 2px; }
+.wl-metric-bar-fill { height: 100%; border-radius: 3px; background: #B5D4F4; }
+.wl-metric-bar-fill.wl-top { background: #185FA5; }
+.wl-metric-rank { font-size: 11px; color: #A6AFBD; }
+
+/* 좁은 화면 대응 */
+@media (max-width: 1200px) {
+  .wl-evidence-row { flex-direction: column; }
+  .wl-detail-hero { flex-direction: column; align-items: stretch; gap: 20px; }
+  .wl-detail-hero-info { border-right: none; padding-right: 0; border-bottom: 1px solid #EFF2F5; padding-bottom: 16px; flex-direction: row; justify-content: space-between; align-items: center; }
+}
+
