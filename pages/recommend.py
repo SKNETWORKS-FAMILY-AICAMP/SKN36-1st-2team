@@ -402,14 +402,15 @@ def render_survey() -> None:
     </div>
     """)
 
-    cols = st.columns(2, gap="medium")
-    for col, (i, opt) in zip(cols, enumerate(q["options"])):
-        with col:
-            st.button(
-                f"**{opt['label']}**  \n{opt['desc']}",
-                key=f"{q['id']}_{i}", on_click=answer, args=(q["id"], i),
-                use_container_width=True,
-            )
+    with st.container(key="survey_choices"):
+        cols = st.columns(2, gap="medium")
+        for col, (i, opt) in zip(cols, enumerate(q["options"])):
+            with col:
+                st.button(
+                    f"**{opt['label']}**  \n{opt['desc']}",
+                    key=f"{q['id']}_{i}", on_click=answer, args=(q["id"], i),
+                    use_container_width=True,
+                )
 
     render_weights(survey_weights())
 

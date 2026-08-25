@@ -1,6 +1,15 @@
 /* ══ 유망지역 추천 ═════════════════════════════════ */
 
 /* ── 단계 탭 ───────────────────────────────────── */
+/* 다른 서비스 페이지와 네비게이션 아래 시작 간격을 맞춘다. */
+.block-container,
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"] {
+  padding: 26px clamp(20px, 4vw, 80px) 80px !important;
+  max-width: 1760px !important;
+  margin: 0 auto !important;
+}
+
 .wl-r-tabs {
   display: flex;
   gap: 28px;
@@ -63,7 +72,7 @@
 /* ── 문항 ──────────────────────────────────────── */
 .wl-q-head {
   text-align: center;
-  margin: 50px 0 32px;
+  margin: 24px 0 30px;
 }
 .wl-q-head h2 {
   font-size: 32px;
@@ -76,6 +85,50 @@
   font-size: 15px;
   color: #8B97A4;
   margin: 0;
+}
+
+/* ── 설문 선택 카드 ────────────────────────────────────── */
+.st-key-survey_choices [data-testid="stButton"] button {
+  min-height: 116px;
+  padding: 26px 28px;
+  border: 1px solid #D8E2EC;
+  border-radius: 14px;
+  background: #FFFFFF;
+  color: #526477;
+  box-shadow: 0 2px 8px rgba(20, 41, 61, .04);
+  transition: border-color .18s ease, background-color .18s ease,
+              box-shadow .18s ease, transform .18s ease;
+}
+.st-key-survey_choices [data-testid="stButton"] button p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #6B7A89;
+}
+.st-key-survey_choices [data-testid="stButton"] button strong {
+  display: inline-block;
+  margin-bottom: 9px;
+  font-size: 18px;
+  line-height: 1.35;
+  color: #14293D;
+}
+.st-key-survey_choices [data-testid="stButton"] button:hover {
+  border-color: #2C6FB5;
+  background: #F3F8FD;
+  box-shadow: 0 7px 18px rgba(44, 111, 181, .12);
+  transform: translateY(-2px);
+}
+.st-key-survey_choices [data-testid="stButton"] button:hover strong {
+  color: #185FA5;
+}
+.st-key-survey_choices [data-testid="stButton"] button:focus-visible {
+  border-color: #2C6FB5;
+  background: #F3F8FD;
+  box-shadow: 0 0 0 3px rgba(44, 111, 181, .16);
+  outline: none;
+}
+.st-key-survey_choices [data-testid="stButton"] button:active {
+  background: #EAF3FB;
+  transform: translateY(0);
 }
 
 /* ── 가중치 패널 ───────────────────────────────── */
