@@ -16,7 +16,6 @@ NAV_LINKS = [
     ("FAQ · 문의",   "/inquiry"),
 ]
 
-
 def html(s: str) -> None:
     """HTML 을 그린다. 마크다운이 4칸 이상 들여쓰기를 코드로 보므로 앞 공백을 제거한다."""
     st.markdown("\n".join(l.lstrip() for l in s.splitlines()),
@@ -32,6 +31,19 @@ def _bg_var(gif: str | None) -> str:
         return ""
     b64 = base64.b64encode(path.read_bytes()).decode()
     return f':root {{ --hero-gif: url("data:image/gif;base64,{b64}"); }}'
+
+
+@st.cache_data
+def load_logo_b64() -> str:
+    """로고 파일을 base64 로 인코딩해 캐시한다.
+
+    setup() 은 페이지를 옮길 때마다 매번 호출되므로, 캐시가 없으면
+    로고 파일을 매번 다시 읽고 인코딩한다. 로딩 화면에서도 같은
+    로고를 쓰기 위해 setup() 밖으로 뺐다.
+    """
+    return base64.b64encode((IMG_DIR / "waylogi.png").read_bytes()).decode()
+
+
 
 
 def setup(page: str = "", active: str = "",
@@ -70,7 +82,9 @@ def setup(page: str = "", active: str = "",
         for label, href in NAV_LINKS
     )
 
-    logo_b64 = base64.b64encode((IMG_DIR / "waylogi.png").read_bytes()).decode()
+    #logo_b64 = base64.b64encode((IMG_DIR / "waylogi.png").read_bytes()).decode()
+    logo_b64 = load_logo_b64()
+
     mark = (
         '<a class="wl-mark" href="/" target="_self">'
         f'<img src="data:image/png;base64,{logo_b64}" class="wl-logo-img" '
