@@ -1,20 +1,34 @@
 """데이터 조회 — 기존 지도·상세 레이아웃에 MySQL backend 데이터를 연결한다."""
+import streamlit as st
+from ui.layout import html, load_logo_b64, setup
+
+setup(page="explore", active="데이터 조회")
+
+loading_ph = st.empty()
+with loading_ph.container():
+    html(f"""
+    <div class="wl-loading">
+      <img src="data:image/png;base64,{load_logo_b64()}" class="wl-loading-logo" alt=""/>
+      <p class="wl-loading-title">전국 249개 지역을 계산하고 있습니다</p>
+      <p class="wl-loading-sub">화물차 등록 현황과 인구 통계를 결합해<br>산업성 · 성장성 · 수요성 지수를 산출합니다</p>
+    </div>
+    """)
+
+# 최초 UI delta를 보낸 뒤 데이터·지도·차트 모듈을 불러온다.
+# 첫 실행에서 이 import들이 끝날 때까지 빈 화면이 보이는 것을 줄이기 위함이다.
 import admdongkor as adk
 import folium
 import pandas as pd
-import streamlit as st
 from pymysql import MySQLError
 from streamlit_folium import st_folium
 
 from ui import charts
 from ui.backend import get_db
-from ui.layout import html, load_logo_b64, setup
 from web.backend import (get_freight_per_population_trend,
     get_logistics_ranking, get_logistics_score,
     get_province_freight_counts, get_region_detail, get_region_trend,
     get_regions, get_regions_by_province, get_supplemental_logistics_metrics)
 
-setup(page="explore", active="데이터 조회")
 TARGET_MONTH, TREND_START, TREND_END = "2026-07", "2023-07", "2026-07"
 METRICS = {
     "종합점수": ("종합점수", "mean", "{:.1f}"), "산업성": ("점수_산업성", "mean", "{:.1f}"),
@@ -46,16 +60,6 @@ CATEGORY_CLASS = {"산업성": "industry", "성장성": "growth", "수요성": "
 SCORE_COL = {"산업성": "점수_산업성", "성장성": "점수_성장성", "수요성": "점수_수요성"}
 SHADES, DIMMED, HIGHLIGHT = ["#E6F1FB", "#B5D4F4", "#85B7EB", "#378ADD", "#185FA5"], "#EFF2F5", "#FF7A45"
 SIDO_ALIAS = {"전남광주통합특별시": ["전남광주통합특별시", "광주광역시", "전라남도"]}
-
-loading_ph = st.empty()
-with loading_ph.container():
-    html(f"""
-    <div class="wl-loading">
-      <img src="data:image/png;base64,{load_logo_b64()}" class="wl-loading-logo" alt=""/>
-      <p class="wl-loading-title">전국 249개 지역을 계산하고 있습니다</p>
-      <p class="wl-loading-sub">화물차 등록 현황과 인구 통계를 결합해<br>산업성 · 성장성 · 수요성 지수를 산출합니다</p>
-    </div>
-    """)
 
 def split_region_name(name):
     sido, _, sgg = name.partition(" ")
@@ -159,9 +163,8 @@ except (MySQLError, OSError, ValueError) as error:
     st.error("MySQL 데이터를 불러오지 못했습니다. .env와 DB 실행 상태를 확인해주세요.")
     st.caption(str(error)); st.stop()
 
-loading_ph.empty()
-
 if df.empty:
+    loading_ph.empty()
     st.warning(f"{TARGET_MONTH}에 점수를 계산할 수 있는 지역 데이터가 없습니다."); st.stop()
 
 ranks = df.select_dtypes(include="number").rank(ascending=False, method="min", na_option="bottom").astype(int)
@@ -446,3 +449,6 @@ with b2:
             freight_trend, x_col="연월", series=series, key="trend",
             data_palette=True,
         )
+
+# 실제 데이터 화면의 마지막 차트까지 렌더링한 뒤 overlay를 제거한다.
+loading_ph.empty()
