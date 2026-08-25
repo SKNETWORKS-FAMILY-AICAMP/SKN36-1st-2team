@@ -300,7 +300,7 @@ CONTACT = f"""
     </div>
 
     <div class="wl-contact-cta">
-      <a class="wl-btn wl-btn-primary" href="/inquiry" target="_self">문의 남기기</a>
+      <a class="wl-btn wl-btn-primary" href="/inquiry?view=inquiry" target="_self">문의 남기기</a>
       <a class="wl-btn wl-btn-ghost-lt" href="/inquiry" target="_self">자주 묻는 질문</a>
     </div>
 

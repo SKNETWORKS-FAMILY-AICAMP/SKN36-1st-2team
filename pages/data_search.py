@@ -8,7 +8,7 @@ from streamlit_folium import st_folium
 
 from ui import charts
 from ui.backend import get_db
-from ui.layout import setup, html
+from ui.layout import html, load_logo_b64, setup
 from web.backend import (get_freight_per_population_trend,
     get_logistics_ranking, get_logistics_score,
     get_province_freight_counts, get_region_detail, get_region_trend,
@@ -46,6 +46,16 @@ CATEGORY_CLASS = {"산업성": "industry", "성장성": "growth", "수요성": "
 SCORE_COL = {"산업성": "점수_산업성", "성장성": "점수_성장성", "수요성": "점수_수요성"}
 SHADES, DIMMED, HIGHLIGHT = ["#E6F1FB", "#B5D4F4", "#85B7EB", "#378ADD", "#185FA5"], "#EFF2F5", "#FF7A45"
 SIDO_ALIAS = {"전남광주통합특별시": ["전남광주통합특별시", "광주광역시", "전라남도"]}
+
+loading_ph = st.empty()
+with loading_ph.container():
+    html(f"""
+    <div class="wl-loading">
+      <img src="data:image/png;base64,{load_logo_b64()}" class="wl-loading-logo" alt=""/>
+      <p class="wl-loading-title">전국 249개 지역을 계산하고 있습니다</p>
+      <p class="wl-loading-sub">화물차 등록 현황과 인구 통계를 결합해<br>산업성 · 성장성 · 수요성 지수를 산출합니다</p>
+    </div>
+    """)
 
 def split_region_name(name):
     sido, _, sgg = name.partition(" ")
@@ -145,8 +155,12 @@ def load_geo_sgg():
 try:
     df, province_freight_rows = load_region_data()
 except (MySQLError, OSError, ValueError) as error:
+    loading_ph.empty()
     st.error("MySQL 데이터를 불러오지 못했습니다. .env와 DB 실행 상태를 확인해주세요.")
     st.caption(str(error)); st.stop()
+
+loading_ph.empty()
+
 if df.empty:
     st.warning(f"{TARGET_MONTH}에 점수를 계산할 수 있는 지역 데이터가 없습니다."); st.stop()
 
@@ -410,7 +424,7 @@ freight_trend = load_freight_trend(
 )
 with b1:
     with st.container(border=True):
-        html('<div class="wl-chart-sub">연도별 화물차 증감</div>')
+        html('<div class="wl-chart-sub">화물차 전년 대비 증감률</div>')
         if freight_trend.empty:
             ph("연도별 증감", "월별 화물차 데이터 없음")
         else:
